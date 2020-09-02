@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ ProjectName }}{% endblock %}
+{% block content %}
+
+    <div class="container" style="padding-top:50px" >
+
+        <div id='content' class='row'>
+            <div class="col-sm-4">
+                <h3>Rooms</h3>
+                <div class='span2 sidebar'>
+                    <div class="list-group">
+                        {% for room in rooms_names %}
+                            {% if room == RoomName %}
+                                <a href="/new_project" class="list-group-item active"><i class="fa fa-key"></i> <span>{{room}}</span></a>
+                            {% else %}
+                                <a href="/new_project" class="list-group-item"><i class="fa fa-key"></i> <span>{{room}}</span></a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-8">
+                <h1>{{RoomName}}</h1>
+                <p class="lead">We accept '.npy' and '.fits input files. They must contain at least RA and DEC information.</p>
+
+                <form style="padding-top:50px" action={{url}} method="post">
+                    <div class="form-group row">
+                        <label for="inputProjName" class="col-sm-2 col-form-label">Project Name: </label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" name="inputProjName" id="inputProjName" placeholder="type project name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ProjDescr">Project description</label>
+                        <textarea class="form-control" id="ProjDescr" rows="3"></textarea>
+                    </div>
+
+
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-end">
+                            <li class="page-item">
+                                <input type="submit" name='continue' value='Previous' />
+                            </li>
+                            <li class="page-item">
+                                <input type="submit" id="register" name='continue' value='Next Room' />
+                        </ul>
+                    </nav>
+
+                    <hr class="featurette-divider">
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

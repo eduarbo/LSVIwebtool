@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}New project setup{% endblock %}
+{% block content %}
+
+    <div class="container marketing" style="padding-top:50px" >
+        <h1>Project Setup</h1>
+        <p class="lead">We accept '.npy' and '.fits input files. They must contain at least RA and DEC information.</p>
+
+        <form style="padding-top:50px" action="{{url_for('new_projects')}}" method="post">
+            <div class="form-group row">
+                <label for="inputProjName" class="col-sm-2 col-form-label">Project Name: </label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" name="inputProjName" id="inputProjName" placeholder="type project name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="ProjDescr">Project description</label>
+                <textarea class="form-control" id="ProjDescr" rows="3"></textarea>
+            </div>
+
+
+
+            <hr class="featurette-divider">
+            <h2>Submitter details</h2>
+
+            <div class="form-group row">
+                <label for="inputSubmitterName" class="col-sm-2 col-form-label">Name: </label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputSubmitterName" name="inputSubmitterName" placeholder="your name">
+                </div>
+                <label for="inputSubmitterAfill" class="col-sm-2 col-form-label">Afilliation: </label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="inputSubmitterAfill" name="inputSubmitterAfill" placeholder="your afilliation">
+                </div>
+                <label for="inputSubmitterEmail" class="col-sm-2 col-form-label">Email: </label>
+                <div class="col-sm-10">
+                    <input type="email" class="form-control" id="inputSubmitterEmail" name="inputSubmitterEmail" placeholder="your email">
+                </div>
+            </div>
+
+            <hr class="featurette-divider">
+            <h2>Rooms</h2>
+
+            <div class="container">
+                <div class="row clearfix">
+                    <div class="col-md-12 table-responsive">
+                        <table class="table table-bordered table-hover table-sortable" id="tab_logic">
+                            <thead>
+                                <tr >
+                                    <th class="text-center">
+                                        Room Name
+                                    </th>
+                                    <th class="text-center">
+                                        Description
+                                    </th>
+                                    <th class="text-center" style="border-top: 1px solid #ffffff; border-right: 1px solid #ffffff;">
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id='addr0' data-id="0" class="hidden">
+                                    <td data-name="name">
+                                        <input type="text" name='name0'  placeholder='Name' class="form-control"/>
+                                    </td>
+                                    <td data-name="desc">
+                                        <textarea name="desc0" placeholder="Description text" class="form-control"></textarea>
+                                    </td>
+                                    <td data-name="del">
+                                        <button name="del0" class='btn btn-danger glyphicon glyphicon-remove row-remove'><span aria-hidden="true">×</span></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <a id="add_row" class="btn btn-primary float-right">Add Row</a>
+                </div>
+
+            </div>
+
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-end">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1">Previous</a>
+                    </li>
+                    <li class="page-item">
+                        <input type="submit" id="register" name='continue' value="Continue to Roms" />
+                </ul>
+            </nav>
+
+        </form>
+    </div>
+
+    <hr class="featurette-divider">
+
+{% endblock %}
+
