@@ -10,15 +10,19 @@
             <div class="form-group row">
                 <label for="inputProjName" class="col-sm-2 col-form-label">Project Name: </label>
                 <div class="col-sm-10">
-                    <input type="text" class="form-control" name="inputProjName" id="inputProjName" placeholder="type project name">
+                    <input type="text" class="form-control" name="inputProjName" id="inputProjName" placeholder="Porject title">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="inputRoomName" class="col-sm-2 col-form-label">Room Name: </label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" name="inputRoomName" id="inputRoomName" placeholder="Room name">
                 </div>
             </div>
             <div class="form-group">
                 <label for="ProjDescr">Project description</label>
-                <textarea class="form-control" id="ProjDescr" rows="3"></textarea>
+                <textarea class="form-control" id="ProjDescr" rows="3" placeholder="Optional description of project (eg. Examples of stellar contamination)"></textarea>
             </div>
-
-
 
             <hr class="featurette-divider">
             <h2>Submitter details</h2>
@@ -38,59 +42,80 @@
                 </div>
             </div>
 
+
             <hr class="featurette-divider">
             <h2>Rooms</h2>
 
-            <div class="container">
-                <div class="row clearfix">
-                    <div class="col-md-12 table-responsive">
-                        <table class="table table-bordered table-hover table-sortable" id="tab_logic">
-                            <thead>
-                                <tr >
-                                    <th class="text-center">
-                                        Room Name
-                                    </th>
-                                    <th class="text-center">
-                                        Description
-                                    </th>
-                                    <th class="text-center" style="border-top: 1px solid #ffffff; border-right: 1px solid #ffffff;">
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id='addr0' data-id="0" class="hidden">
-                                    <td data-name="name">
-                                        <input type="text" name='name0'  placeholder='Name' class="form-control"/>
-                                    </td>
-                                    <td data-name="desc">
-                                        <textarea name="desc0" placeholder="Description text" class="form-control"></textarea>
-                                    </td>
-                                    <td data-name="del">
-                                        <button name="del0" class='btn btn-danger glyphicon glyphicon-remove row-remove'><span aria-hidden="true">×</span></button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <a id="add_row" class="btn btn-primary float-right">Add Row</a>
-                </div>
-
+            <div class="col-md-4">
+                <button type="submit" name="make_gall" value="continue" class="btn btn-primary">Create galleries</button>
             </div>
-
-            <nav aria-label="Page navigation example">
-                <ul class="pagination justify-content-end">
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1">Previous</a>
-                    </li>
-                    <li class="page-item">
-                        <input type="submit" id="register" name='continue' value="Continue to Roms" />
-                </ul>
-            </nav>
-
         </form>
+
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-end">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">Previous</a>
+                </li>
+                <li class="page-item">
+                    <input type="submit" id="register" name='continue' value="Continue to Roms" />
+            </ul>
+        </nav>
     </div>
 
     <hr class="featurette-divider">
+
+
+        <div class="col-xs-12">
+            <div class="col-md-12" >
+                <h3> Actions</h3>
+                <div id="field">
+                <div id="field0">
+<!-- Text input-->
+<form class="needs-validation" novalidate>
+  <div class="form-row">
+    <div class="col-md-4 mb-3">
+      <label for="validationCustom01">First name</label>
+      <input type="text" class="form-control" id="validationCustom01" placeholder="First name" value="Mark" required>
+      <div class="valid-feedback">
+        Looks good!
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <label for="validationCustom02">Last name</label>
+      <input type="text" class="form-control" id="validationCustom02" placeholder="Last name" value="Otto" required>
+      <div class="valid-feedback">
+        Looks good!
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <label for="validationCustomUsername">Username</label>
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="inputGroupPrepend">@</span>
+        </div>
+        <input type="text" class="form-control" id="validationCustomUsername" placeholder="Username" aria-describedby="inputGroupPrepend" required>
+        <div class="invalid-feedback">
+          Please choose a username.
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+</div>
+</div>
+<!-- Button -->
+<div class="form-group">
+  <div class="col-md-4">
+    <button id="add-more" name="add-more" class="btn btn-primary">Add More</button>
+  </div>
+</div>
+<br><br>
+
+            </div>
+        </div>
+
 
 {% endblock %}
 

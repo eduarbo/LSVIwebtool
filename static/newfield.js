@@ -107,3 +107,32 @@ $(document).ready(function() {
     $(this).addClass('active');
   });
 });
+
+$(document).ready(function () {
+    //@naresh action dynamic childs
+    var next = 0;
+    $("#add-more").click(function(e){
+        e.preventDefault();
+        var addto = "#field" + next;
+        var addRemove = "#field" + (next);
+        next = next + 1;
+        var newIn = ' <div id="field'+ next +'" name="field'+ next +'"><!-- Text input--><div class="col-md-4 mb-3"><label for="validationCustom01">First name</label><input type="text" class="form-control" id="validationCustom01" placeholder="First name" value="Mark" required><div class="valid-feedback">Looks good!</div></div><div class="col-md-4 mb-3"><label for="validationCustom02">Last name</label><input type="text" class="form-control" id="validationCustom02" placeholder="Last name" value="Otto" required><div class="valid-feedback">Looks good!</div></div><div class="col-md-4 mb-3"><label for="validationCustomUsername">Username</label><div class="input-group"><div class="input-group-prepend"><span class="input-group-text" id="inputGroupPrepend">@</span></div><input type="text" class="form-control" id="validationCustomUsername" placeholder="Username" aria-describedby="inputGroupPrepend" required><div class="invalid-feedback">Please choose a username.</div></div></div></div></div></div>';
+
+        var newInput = $(newIn);
+        var removeBtn = '<button id="remove' + (next - 1) + '" class="btn btn-danger remove-me" >Remove</button></div></div><div id="field">';
+        var removeButton = $(removeBtn);
+        $(addto).after(newInput);
+        $(addRemove).after(removeButton);
+        $("#field" + next).attr('data-source',$(addto).attr('data-source'));
+        $("#count").val(next);
+
+            $('.remove-me').click(function(e){
+                e.preventDefault();
+                var fieldNum = this.id.charAt(this.id.length-1);
+                var fieldID = "#field" + fieldNum;
+                $(this).remove();
+                $(fieldID).remove();
+            });
+    });
+
+});
