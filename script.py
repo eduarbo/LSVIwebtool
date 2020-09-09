@@ -1,16 +1,17 @@
+#
+from functools import partial
+
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import random
+import pandas as pd
 
 import bokeh.plotting as bk
-from bokeh.models import ColumnDataSource, ImageURL, CustomJS, Span, OpenURL, TapTool, Panel, Tabs, Div
-from bokeh.models.widgets import CheckboxGroup, CheckboxButtonGroup, RadioGroup, RadioButtonGroup
+from bokeh.models import ColumnDataSource, ImageURL, CustomJS, Span, OpenURL, TapTool, Div
+from bokeh.models.widgets import CheckboxGroup, RadioGroup
 from bokeh.layouts import gridplot, row, column, WidgetBox
 from bokeh.io import curdoc, show
-from bokeh.embed import components
 from bokeh.plotting import figure
-from bokeh.resources import INLINE
 
 def coordtopix(center, coord, size, scale):
 
@@ -37,7 +38,7 @@ def coordtopix(center, coord, size, scale):
 
 def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle='page', veto=None, info=None, grid=[2,2], m=4,
                       radius=4/3600, comparison=None, layer_list=None, title=None, tab=False, tab_title=None, main_text=None,
-                         buttons_text=None, RGlabels=None, output=None):
+                         buttons_text=None, RGlabels=None, output=None, userfile_path=None):
 
     '''
 
@@ -85,15 +86,25 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
         bk.output_file(html_page, title=htmltitle)
         print(html_page)
 
-
     plots = []
     sources = []
     layers = []
-    tests = []
-    js_resources_list = []
-    css_resources_list = []
-    script_list = []
-    div_list = []
+
+    if userfile_path is not None:
+        userfile = pd.read_csv(userfile_path + '.cvs')
+        current_RGval = userfile['data']
+
+    if RGlabels is not None:
+        RGlabels_id = {key:i for i, key in enumerate(RGlabels)}
+
+    def my_radio_handler(event, idx):
+        print(event, RGlabels[event], idx)
+
+        if userfile_path is not None:
+            userfile = pd.read_csv(userfile_path + '.cvs')
+            print(userfile_path)
+            userfile.iloc[idx] = str(RGlabels[event])
+            userfile.to_csv(userfile_path+'.cvs', index=False)
 
     if comparison is not None: a, b = comparison[0], comparison[1]
 
@@ -109,7 +120,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     size = int(round(boxsize/scale))
     print(boxsize, size)
 
-    idx_list = random.sample(list(idx), rows*cols)
+    idx_list = idx#random.sample(list(idx), rows*cols)
 
     if info is None:
         info = {'RA':RA, 'DEC':DEC}
@@ -121,8 +132,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
         layer_list = ['dr9f-south', 'dr9f-south-model', 'dr9f-south-resid', 'dr9g-south', 'dr9g-south-model', 'dr9g-south-resid',
                  'dr9f-north', 'dr9f-north-model', 'dr9f-north-resid', 'dr9g-north', 'dr9g-north-model', 'dr9g-north-resid']
-
-#figlist = [figure(title='Figure '+str(i),plot_width=100,plot_height=100) for i in range(N)]
 
     if True:
 
@@ -144,10 +153,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
                 for i in ['RA', 'DEC', 'morph', 'r', 'g', 'z', 'refcat']:
                     TOOLTIPS.append((i+'_b', '@'+i+'_b'))
                     TOOLTIPS.append((i+'_a', '@'+i+'_a'))
-
             else:
-
-                #if info is not None:
 
                 TOOLTIPS = []
 
@@ -157,7 +163,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
             p = figure(plot_width=size, plot_height=size, tooltips=TOOLTIPS, tools="tap")
             p.axis.visible = False
             p.min_border = 0
-            #if title is not None: p.title.text = title
 
             layers2 = []
             for layer in layer_list:
@@ -175,7 +180,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
             colors = ['green', 'red', 'blue', 'cyan', 'yellow']
             circle_i = []
-            #test_i = []
             for color, key, val in zip(colors, veto.keys(), veto.values()):
 
                 ravpix, decvpix = coordtopix(center=[RAidx, DECidx], coord=[RA[(mask) & (val)], DEC[(mask) & (val)]], size=size, scale=scale)
@@ -196,8 +200,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
                 else:
 
-                    #if info is not None:
-
                     data = {}
                     data['x'] = ravpix
                     data['y'] = decvpix
@@ -209,9 +211,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
                 circle = p.circle('x', 'y', source=sourceCirc, size=15, fill_color=None, line_color=color, line_width=3)
                 circle_i.append(circle)
 
-                #circletmp = p.circle('x', 'y', source=sourceCirc, size=30, fill_color=None, line_color=color, line_width=5)
-                #test_i.append(circletmp)
-
             lineh = Span(location=size/2, dimension='height', line_color='white', line_dash='solid', line_width=1)
             linew = Span(location=size/2, dimension='width', line_color='white', line_dash='solid', line_width=1)
 
@@ -219,27 +218,15 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
             p.add_layout(linew)
 
             if RGlabels is not None:
-
-                def my_radio_handler(new):
-                    print('Radio button option ' + str(new) + ' selected.')
-
-                rbt = RadioGroup(labels=RGlabels, active=len(RGlabels)-1, default_size=70)
-                rbt.on_click(my_radio_handler)
+                print(current_RGval.iloc[idx], RGlabels_id[current_RGval.iloc[idx]])
+                rbt = RadioGroup(labels=RGlabels, active=RGlabels_id[current_RGval.iloc[idx]], default_size=50)
+                rbt.on_click(partial(my_radio_handler, idx=idx))
                 plots.append(WidgetBox(row(p, rbt)))
             else:
                 plots.append(p)
-            #plots.append(p)
+
             sources.append(circle_i)
             layers.append(layers2)
-            #tests.append(test_i)
-
-            # # grab the static resources
-            # js_resources_list.append(INLINE.render_js())
-            # css_resources_list.append(INLINE.render_css())
-            # # render template
-            # script, div = components(p)
-            # script_list.append(script)
-            # div_list.append(div)
 
     checkbox = CheckboxGroup(labels=list(veto.keys()), active=list(np.arange(len(veto))))
     iterable = [elem for part in [[('_'.join(['line',str(figid),str(lineid)]),line) for lineid,line in enumerate(elem)] for figid,elem in enumerate(sources)] for elem in part]
@@ -274,40 +261,99 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     if buttons_text is None: buttons_text = '...'
 
     layout = column(Div(text='<h1>%s</h1>' %(title)), Div(text='<h3>%s</h3>' %(main_text)), row(column(Div(text='<h3>%s</h3>' %(buttons_text)), controls), grid))
-    if tab:
-        # Make a tab with the layout
-        tab = Panel(child=layout, title = tab_title)
-        return tab
+    #show(layout)
+    return layout
 
-    else:
-        #grab the static resources
-        js_resources = INLINE.render_js()
-        css_resources = INLINE.render_css()
-        script1, div1 = components(layout)
-        #script2, div2 = components(column(controls))
-        return js_resources, css_resources, script1, div1
-        #return grid, controls
-        #show(layout)
+#if __name__ == '__main__':
 
+#get vars
+args = curdoc().session_context.request.arguments
 
-def bokeh():
+print(args)
 
-    # init a basic bar chart:
-    # http://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html#bars
-    fig = figure(plot_width=600, plot_height=600)
-    fig.vbar(
-        x=[1, 2, 3, 4],
-        width=0.5,
-        bottom=0,
-        top=[1.7, 2.2, 4.6, 3.9],
-        color='navy'
-    )
+try:
+    catpath = args.get('catpath')[0]  #pass this as a string
+except:
+    cathpath = os.path.abspath(os.getcwd())+'/projects/_files/VITestFile.npy'
 
-    # grab the static resources
-    js_resources = INLINE.render_js()
-    css_resources = INLINE.render_css()
+try:
+    userfile_path = args.get('userfile_path')[0].decode("utf-8") #pass this as a string
+except:
+    userfile_path = None
 
-    # render template
-    script, div = components(fig)
+try:
+    idx = args.get('idx')[0].decode("utf-8") #pass this as a list
+    idx = [int(i) for i in idx[1:-1].split()]
+except:
+    idx = None
 
-    return script, div, js_resources, css_resources
+try:
+    labels = args.get('labels')[0] #pass labels as a dict
+except:
+    labels = {'BGS':'bgs', 'No BGS':'not_bgs'}
+
+try:
+    coord_names = args.get('coord_names')[0] #pass this as a list
+except:
+    coord_names = ['RA', 'DEC']
+
+try:
+    info_list = args.get('info_list')[0] #pass info as a list
+except:
+    info_list = ['RMAG', 'GMAG', 'ZMAG', 'TYPE']
+
+try:
+    layer_list = args.get('layer_list')[0] #pass this as a list
+except:
+    dr, survey = 'dr8', 'south'
+    layer_list = ['%s-%s' %(dr, survey), '%s-%s-model' %(dr, survey), '%s-%s-resid' %(dr, survey)]
+
+# try:
+#     centre = args.get('centre')[0] #pass this as a string
+# except:
+#     centre = 'centre'
+
+try:
+    RGlabels = args.get('RGlabels')[0] #pass this as a list
+except:
+    RGlabels = ["STAR", "GAL", "CONT", "OTHR"]
+
+data = np.load(cathpath)
+
+print('========= idx ===========')
+print(idx, type(idx))
+
+# veto = {}
+# for key, val in zip(labels.keys(), labels.values()):
+#     veto[key] = data[val]
+veto = {key:data[val] for key, val in zip(labels.keys(), labels.values())}
+info = {key:data[key] for key in info_list}
+info_list = info_list + coord_names
+coord = [data[i] for i in coord_names]
+if idx is None:
+    idx = list(np.where(data['centre']))[0]
+unclassified_label = ['UNCL']
+RGlabels = RGlabels + unclassified_label
+title = None
+main_text = None
+buttons_text = None
+grid = [5,2]
+savefile = None
+
+print(cathpath)
+print(data.dtype.names)
+print(veto.keys())
+print(info_list)
+print(coord_names)
+print(idx)
+print(RGlabels)
+
+print('userfile_path: \t %s' %(userfile_path))
+
+#get scripts
+layout = html_postages(coord=coord, idx=idx, veto=veto, info=info, grid=grid, layer_list=layer_list, title=title,
+                  main_text=main_text, buttons_text=buttons_text, savefile=savefile, notebook=False,
+                        RGlabels=RGlabels, output=None, userfile_path=userfile_path)
+
+curdoc().add_root(layout)
+#show(layout)

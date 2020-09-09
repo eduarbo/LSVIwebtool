@@ -1,4 +1,8 @@
 import os
+import atexit
+import random
+import subprocess
+import pandas as pd
 
 import numpy as np
 from bokeh.client import push_session
@@ -13,6 +17,13 @@ app = Flask(__name__)
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+
+bokeh_process = subprocess.Popen(
+    ['python', '-m', 'bokeh', 'serve', '--allow-websocket-origin=localhost:5006', 'script.py'], stdout=subprocess.PIPE)
+
+@atexit.register
+def kill_server():
+    bokeh_process.kill()
 
 @app.route('/')
 @app.route('/home')
@@ -30,99 +41,88 @@ def projects():
 @app.route('/new_project', methods=['GET', 'POST'])
 def new_projects():
     if request.method == 'POST':
-        req = request.form
-        for key, val in zip(req.keys(), req.values()):
-            session[key] = val
-        #print(session)
-        #print(session['name0'])
+        req = {}
+        req_ = request.form
+        for key, val in zip(req_.keys(), req_.values()):
+            req[key] = val
 
         if request.form.get('make_gall') == 'continue':
 
-            #url = '/%s/%s' %(ProjectName, RoomName)
-
-            #request values
-            #create room directory to store data and users VI files
+            #create project directory root
             pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(req.get('inputProjName'), req.get('inputRoomName'))
-            #print(pathdir)
-            #ispathdir = os.path.isdir(pathdir)
-            #if not ispathdir:
+            projPath = os.path.abspath(os.getcwd())+'/projects/%s/' %(req.get('inputProjName'))
             os.makedirs(pathdir, exist_ok=True)
 
-            #prepare data
-            data = np.load(pathdir+'VITestFile.npy')
-
-            #input data
-            veto = {'BGS':data['bgs'],'Not BGS':data['not_bgs']}
-            info_list = ['RA', 'DEC', 'RMAG', 'GMAG', 'ZMAG', 'TYPE']
-            info = {key:data[key] for key in info_list}
-            dr, survey = 'dr8', 'south'
-            layer_list = ['%s-%s' %(dr, survey), '%s-%s-model' %(dr, survey), '%s-%s-resid' %(dr, survey)]
-            coord = [data['RA'], data['DEC']]
-            idx = list(np.where(data['centre']))[0]
-            RGlabels = ["STAR", "GAL", "CONT", "OTHR"]
-            unclassified_label = 'UNCL'
-            RGlabels.append(unclassified_label)
-            title = None
-            main_text = None
-            buttons_text = None
-            grid = [10,4]
-            savefile = None
-            print('===================================')
-            print(len(idx))
+            email = req.get('inputSubmitterEmail')
+            afill = req.get('inputSubmitterAfill')
+            user = '%s_%s' %(email, afill)
 
             #create user array
-            selections = np.full(len(data), 'NA', dtype='S4')
-            selections[idx] = unclassified_label
-            email = session['inputSubmitterEmail']
-            afill = session['inputSubmitterAfill']
-            user = '%s_%s' %(email, afill)
-            cvsfile = '%s%s' %(pathdir, user)
-            #np.savetxt(cvsfile, selections, fmt='%s')
-            np.save(cvsfile, selections)
+            if req.get('catpath') is not None: #pass this as a string
+                catpath = req.get('catpath')
+            else:
+                catpath = os.path.abspath(os.getcwd())+'/projects/_files/VITestFile.npy'
 
-            #create galleries
-            js_resources, css_resources, script1, div1 = vi.html_postages(coord=coord, idx=idx, veto=veto, info=info, grid=grid, layer_list=layer_list, title=title,
-                      main_text=main_text, buttons_text=buttons_text, savefile=savefile, notebook=False, RGlabels=RGlabels, output=cvsfile)
+            if req.get('centre') is not None:#pass this as a string
+                centre = req.get('centre')
+            else:
+                centre = 'centre'
 
-            proj_dict = {'cvsfile':cvsfile, 'js_resources':js_resources, 'css_resources':css_resources, 'script1':script1, 'div1':div1}
-            np.save(pathdir+'core', proj_dict, allow_pickle=True)
-            #for key, val in zip(proj_dict.keys(), proj_dict.values()):
-                #print(key)
-            session['core'] = pathdir+'core'+'.npy'
-            print('============1============')
-            print(session.keys())
+            #for each ROOM
+            rows, cols = 5, 2 #req.get('rows'), req.get('cols')
+            Nsamples = rows*cols
+            Nreq = 40 #req.get('Nreq')
+            Nbatchs = int(Nreq/Nsamples)
+            grid = [rows,cols]
 
-            return redirect(url_for('galleries', ProjectName=req.get('inputProjName'), RoomName=req.get('inputRoomName'), user=user))
+            data = np.load(catpath)
+            idx = list(np.where(data[centre]))[0]
+            random.shuffle(idx)
+            idxs = idx[:Nreq].reshape(Nbatchs,Nsamples)
+            roomname = req.get('inputRoomName')
+            for num, i in enumerate(idxs):
+                req['%s_%s' %(roomname, str(num))] = np.array(i)
+
+            req['%s_Nbatchs' %(roomname)] = Nbatchs
+
+            np.save('%s%s' %(projPath, 'requests'), req)
+
+            #for each user
+            pddata = {'data':np.full(len(data), 'NA', dtype='S4')}
+            selections = pd.DataFrame(pddata, columns=["data"])
+            unclassified_label = ['UNCL']
+            idx = list(np.where(data[centre]))[0]
+            selections.iloc[idx] = unclassified_label[0]
+            userfile_path = '%s%s' %(pathdir, user)
+            #np.save(userfile_path, selections)
+            #np.savetxt(userfile_path+'.cvs', selections, fmt='%s')
+            selections.to_csv(userfile_path+'.cvs', index=False)
+
+            #Export user details of project and room and batchID to database
+            batchID = 0 #assign batchID accorndingly to availability
+
+            return redirect(url_for('viewer', ProjectName=req.get('inputProjName'), RoomName=req.get('inputRoomName'), user=user, batchID=batchID))
     else:
         return render_template('new_project.html')
 
+@app.route('/<ProjectName>/<RoomName>/<user>/<batchID>')
+def viewer(ProjectName, RoomName, user, batchID):
 
-@app.route('/<ProjectName>/<RoomName>/<user>', methods=['GET', 'POST'])
-def galleries(ProjectName, RoomName, user):
+    print('....................PASSING THROUGHT HERE AGAIN!.................')
 
-    #if request.method == 'GET':
+    reqPath = os.path.abspath(os.getcwd())+'/projects/%s/requests.npy' %(ProjectName)
+    req = np.load(reqPath, allow_pickle=True).item()
+    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    userfile_path = '%s%s' %(pathdir, user)
+    #get centres from batchID
+    idx = req.get('%s_%s' %(RoomName, str(batchID)))
+    print(idx)
 
-    # document = Document()
-    # document.add_root(grid)
-    #document.add_root(controls)
-    # session = push_session(document, session_id=None)
-    # body = server_session(None, session_id=session.id)
-    #return render_template('bokeh_test.html', body=body)
+    #args = {key:req.get(key)  for key in ['catpath', 'labels', 'coord_names', 'info_list', 'layer_list', 'centre', 'RGlabels']}
+    args = {'userfile_path':userfile_path, 'idx':idx}
 
-    core = os.path.abspath(os.getcwd())+'/projects/%s/%s/core.npy' %(ProjectName, RoomName, )
-    proj_dict = np.load(core, allow_pickle=True).item()
-
-    #return render_template('gallery_base.html', ProjectName=ProjectName, RoomName=RoomName, url=url)
-    html = render_template(
-        'bokeh_test.html',
-        plot_script1=proj_dict['script1'],
-        plot_div1=proj_dict['div1'],
-        js_resources=proj_dict['js_resources'],
-        css_resources=proj_dict['css_resources'],
-        title=RoomName,
-        cvsfile=proj_dict['cvsfile']
-    )
-    return encode_utf8(html)
+    bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+    return render_template('room.html',bokeh_script=bokeh_script)
 
 # function to return key for any value
 def get_key(my_dict, val):
@@ -132,31 +132,6 @@ def get_key(my_dict, val):
 
     return "key doesn't exist"
 
-'''
- rooms = [i for i in list(session.keys()) if i.startswith('name')]
-    rooms_names = [session[i] for i in rooms]
-    rooms_urls = ['/%s/%s' %(ProjectName, i) for i in rooms_names]
-    print(rooms, len(rooms), get_key(session, RoomName))
-    roomN = int(get_key(session, RoomName)[-1])
-
-    if request.method == 'POST':
-        if request.form.get('continue') == 'Previous':
-            if roomN == 0:
-                return redirect(url_for('new_projects'))
-            else:
-                return redirect(url_for('rooms', ProjectName=ProjectName, RoomName=session['name'+str(roomN-1)]))
-        elif request.form.get('continue') == 'Next Room':
-            if roomN == len(rooms) - 1:
-                #redirect to Galleries
-                return redirect(url_for('rooms', ProjectName=ProjectName, RoomName=session['name'+str(roomN+1)]))
-            else:
-                return redirect(url_for('rooms', ProjectName=ProjectName, RoomName=session['name'+str(roomN+1)]))
-        else:
-            ValueError('Error!')
-    else:
-        return render_template('room_form.html', ProjectName=ProjectName, RoomName=RoomName, url=url, rooms_names=rooms_names, rooms_urls=rooms_urls)
-    
-'''
 
 
 if __name__ == '__main__':
