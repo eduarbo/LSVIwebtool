@@ -26,6 +26,7 @@ PyYAML==5.3.1
 requests==2.24.0
 sip==4.19.13
 six==1.15.0
+SQLAlchemy @ file:///tmp/build/80754af9/sqlalchemy_1598374728542/work
 tornado==6.0.4
 typing-extensions==3.7.4.3
 urllib3==1.25.10
