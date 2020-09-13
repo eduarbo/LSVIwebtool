@@ -1,0 +1,8 @@
+
+<h2> Are you sure you want to delete {{room.room}} from project {{room.project}}? </h2>
+<form action="#" method='post'>
+    <button type="submit" name="delete" value="yes" class="btn btn-danger"> Delete</button>
+    <a href='{{url_for('user_active_rooms', user=room.email)}}'>
+    <button type="submit" name="delete" value="no" class="btn btn-primary"> Cancel</button>
+    </a>
+</form>

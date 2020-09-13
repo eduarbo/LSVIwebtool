@@ -92,12 +92,10 @@
 
         <ol>
           {% for pj in pjs %}
-            <li> {{pj.project}}  {{pj.room}}  {{pj.afilliation}} {{pj.VIreq}} {{pj.status}} <a href="/join/{{pj.project}}/{{pj.room}}/"><button>Join!</button></a></li>
+            <li> {{pj.project}}  {{pj.room}}  {{pj.email}} {{pj.VIreq}} {{pj.status}} <a href="/join/{{pj.project}}/{{pj.room}}/"><button class="btn btn-primary">Join!</button></a></li>
             <br> <br>
           {% endfor %}
         </ol>
-
-        <hr class="featurette-divider">
 
         <!-- /END THE FEATURETTES -->
 

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}title{% endblock %}
+{% block content %}
+
+      <div class="container marketing">
+
+        <div class="row featurette">
+          <div class="col-md-7">
+            <h2 class="featurette-heading">{{ name }} active projects/rooms </h2>
+            <p class="lead">{{ text }}</p>
+          </div>
+        </div>
+
+        {% if myproject != None %}
+          <h2>My projects</h2>
+          <ol>
+            {% for pj in myprojects %}
+              <li> {{pj.id}}  {{pj.project}} {{pj.room}} {{pj.afilliation}} {{pj.status}}
+                <a href="{{url_for('delete', ProjectName=pj.project, RoomName=pj.room, email=pj.email)}}"><button class="btn btn-danger">Delete</button></a>
+                <a><button class="btn btn-success">Download</button></a></li>
+              <br> <br>
+            {% endfor %}
+          </ol>
+        {% endif %}
+
+        <h2 >Rooms I've joined</h2>
+        <ol>
+          {% for room in rooms %}
+            <li> {{room.id}}  {{room.project}} {{room.room}}  {{ room.batch }}  {{room.afilliation}} {{room.status}}
+              <a href="{{ url_for('viewer', ProjectName=room.project, RoomName=room.room, user=user, batchID=room.batch) }}"><button class="btn btn-primary">Continue</button></a></li>
+            <br> <br>
+          {% endfor %}
+        </ol>
+
+        <!-- /END THE FEATURETTES -->
+
+      </div><!-- /.container -->
+{% endblock %}

@@ -2,6 +2,7 @@ import glob
 import os
 import atexit
 import random
+import shutil
 import subprocess
 import pandas as pd
 
@@ -105,11 +106,15 @@ def new_projects():
             random.shuffle(idx)
             idxs = idx[:Nreq].reshape(Nbatchs,Nsamples)
             roomname = req.get('inputRoomName')
+            #print('================== req rooms ====================')
             for num, i in enumerate(idxs):
                 req['%s_%s' %(roomname, str(num))] = np.array(i)
+                #print(req['%s_%s' %(roomname, str(num))])
 
             req['%s_Nbatchs' %(roomname)] = Nbatchs
+            #print(req['%s_Nbatchs' %(roomname)])
             req['%s_Ndata' %(roomname)] = len(data)
+
 
             np.save('%s%s' %(projPath, 'requests'), req)
 
@@ -208,7 +213,87 @@ def join(ProjectName, RoomName):
 
                 return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
     #else:
-    return render_template('join.html')
+    author = session_projects.query(VIprojects).filter_by(room=RoomName, project=ProjectName).one()
+    text = 'By %s from %s' %(author.name, author.afilliation)
+    #author.close()
+    return render_template('join.html', title='Join %s' %(RoomName), button='Go to galleries', text=text)
+
+@app.route('/resume', methods=['GET', 'POST'])
+def resume():
+    '''
+   If joining a project room by clicking to a specific entry on projects/rooms status table,
+   you will have to identify yourself first
+    '''
+
+    if request.method == 'POST':
+        if request.form.get('make_gall') == 'continue':
+
+            req = request.form
+            name = req.get('name')
+            email = req.get('email')
+            afill = req.get('afilliation')
+
+            user = session_tracker.query(tracker).filter_by(email=email).all()
+            if len(user) > 0:
+                return redirect(url_for('user_active_rooms', user=email))
+            else:
+                text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
+                return render_template('join.html', title='Resume your Rooms', button='Continue', text=text)
+
+            #return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
+    #else:
+    return render_template('join.html', title='Resume your Rooms', button='Continue')
+
+@app.route('/current_rooms/<user>')
+def user_active_rooms(user):
+
+    rooms = session_tracker.query(tracker).filter_by(email=user).all()
+    username = user+'_'+rooms[0].afilliation
+
+    for room in rooms:
+        progress = get_user_status(ProjectName=room.project, RoomName=room.room,
+                                   user='%s_%s' %(room.email, room.afilliation), batchID=room.batch)
+        room.status = progress
+    session_tracker.close()
+
+    myprojects = session_projects.query(VIprojects).filter_by(email=user).all()
+
+    for pj in myprojects:
+        #print(pj.VIreq, pj.room, pj.status)
+        progress = get_room_status(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
+        pj.status = progress
+        #session_projects.commit()
+    session_projects.close()
+    #print('----------------------------')
+    #print(myprojects)
+
+    return render_template('user_active_rooms.html', rooms=rooms, myprojects=myprojects, name=rooms[0].name, user=username)
+
+# This will let us Delete our book
+@app.route('/delete/<ProjectName>/<RoomName>/<email>', methods=['GET', 'POST'])
+
+def delete(ProjectName, RoomName, email):
+    RoomToDelete = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
+    if request.method == 'POST':
+        if request.form.get('delete') == 'yes':
+
+            #remove directory
+            pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+
+            try:
+                shutil.rmtree(pathdir)
+            except OSError as e:
+                print("Error: %s : %s" % (pathdir, e.strerror))
+
+            #delete data from database
+            session_projects.delete(RoomToDelete)
+            session_projects.commit()
+
+            return redirect(url_for('user_active_rooms', user=email))
+        if request.form.get('delete') == 'no':
+            return redirect(url_for('user_active_rooms', user=email))
+    else:
+        return render_template('delete.html', room=RoomToDelete)
 
 def find_batch_available(ProjectName, RoomName, user):
 
@@ -249,8 +334,26 @@ def find_batch_available(ProjectName, RoomName, user):
 
     return batchID
 
-def get_user_status(ProjectName, RoomName):
-    pass
+def get_user_status(ProjectName, RoomName, user, batchID):
+
+    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    file = "%s/%s_%i.cvs" %(pathdir, user, batchID)
+
+    reqPath = os.path.abspath(os.getcwd())+'/projects/%s/requests.npy' %(ProjectName)
+    req = np.load(reqPath, allow_pickle=True).item()
+    idxs = req.get('%s_%s' %(RoomName, str(batchID)))
+    tot = len(idxs)
+
+    #print('==========================')
+    #print(ProjectName, RoomName, user, batchID, idxs, type(idxs))
+
+    progress = 0
+
+    userfile = np.array(pd.read_csv(file)['data'], dtype=str)
+    mask = (userfile != "b'NA'") & (userfile != 'UNCL')
+    progress += int(np.sum(mask))
+
+    return np.round(100*progress/tot, 1)
 
 def get_room_status(ProjectName, RoomName, VIreq):
 
