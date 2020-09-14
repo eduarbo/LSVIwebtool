@@ -149,17 +149,20 @@ def viewer(ProjectName, RoomName, user, batchID):
     userfile_path = '%s%s_%s' %(pathdir, user, str(batchID))
     userfile_path_csv = '%s.cvs' %(userfile_path)
     idx = req.get('%s_%s' %(RoomName, str(batchID)))
+    Nbatchs = req['%s_Nbatchs' %(RoomName)]
 
     # print('================== ROOMS ========================')
     # rooms = session_tracker.query(tracker).all()
     # for room in rooms:
     #     print(room.name)
     #
-    print('================== ROOMS ========================')
-    pj = session_projects.query(VIprojects).all()
-    for p in pj:
-     print(p.status, p.progress)
-    session_projects.close()
+    #print('================== ROOMS ========================')
+
+    session_tracker.close()
+    # pj = session_projects.query(VIprojects).all()
+    # for p in pj:
+    #  print(p.status, p.progress)
+    # session_projects.close()
 
     if not os.path.isfile(userfile_path_csv):
 
@@ -172,11 +175,23 @@ def viewer(ProjectName, RoomName, user, batchID):
         selections.iloc[idx] = unclassified_label[0]
         selections.to_csv('%s.cvs' %(userfile_path), index=False)
 
+        try:
+            session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, batch=batchID, email=user.split('_')[0]).one()
+        except:
+            usr = session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, email=user.split('_')[0]).all()
+            print('Data entry does not exist. Creating new entry for this user')
+            #add entry to database
+            newentry = tracker(project=usr[0].project, room=usr[0].room, batch=batchID,
+                             name=usr[0].name, afilliation=usr[0].afilliation, email=usr[0].email, progress=int(0), status='open')
+            session_tracker.add(newentry)
+            session_tracker.commit()
+            session_tracker.close()
+
     #args = {key:req.get(key)  for key in ['catpath', 'labels', 'coord_names', 'info_list', 'layer_list', 'centre', 'RGlabels']}
     args = {'userfile_path':userfile_path, 'idx':idx}
 
     bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-    return render_template('room.html',bokeh_script=bokeh_script)
+    return render_template('room.html',bokeh_script=bokeh_script, Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
 
 #/
 #
