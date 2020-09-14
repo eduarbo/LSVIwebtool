@@ -11,26 +11,153 @@
           </div>
         </div>
 
-        {% if myproject != None %}
-          <h2>My projects</h2>
-          <ol>
-            {% for pj in myprojects %}
-              <li> {{pj.id}}  {{pj.project}} {{pj.room}} {{pj.afilliation}} {{pj.status}}
-                <a href="{{url_for('delete', ProjectName=pj.project, RoomName=pj.room, email=pj.email)}}"><button class="btn btn-danger">Delete</button></a>
-                <a><button class="btn btn-success">Download</button></a></li>
-              <br> <br>
-            {% endfor %}
-          </ol>
+        {% if myprojects_open != None %}
+            <div class="container">
+                  <div class="row">
+                      <div class="col md-12">
+                          <div class="jumbotron p-3">
+                              <h2><b> My Open Rooms </b>  <button type="button"  class="btn btn-success float-right"
+                              data-toggle="modal" data-target="#mymodal">Add New Room</button> </h2>
+
+                              {% with messages = get_flashed_messages() %}
+                              {% if messages %}
+
+                              {% for message in messages %}
+                              <div class="alert alert-success alert-dismissable" role="alert">
+                                  <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                                      <span aria-hidden="true">x</span>
+                                  </button>
+                                  {{message}}
+                              </div>
+                              {% endfor %}
+
+                              {% endif %}
+                              {% endwith %}
+
+                              <table class="table table-hover table-striped">
+                                  <tr>
+                                      <th>ID</th>
+                                      <th>Projects</th>
+                                      <th>Room</th>
+                                      <th>Progress [%]</th>
+                                      <th>status</th>
+                                      <th>Action</th>
+                                  </tr>
+
+                                 {% for row in myprojects_open %}
+                                  <tr>
+                                      <td>{{row.id}}</td>
+                                      <td>{{row.project}}</td>
+                                      <td>{{row.room}}</td>
+                                      <td>{{row.progress}}</td>
+                                      <td>{{row.status}}</td>
+                                      <td>
+                                          <a href='#' class="btn btn-warning btn-xs">Download</a>
+                                          <a href="{{url_for('delete', ProjectName=row.project, RoomName=row.room, email=row.email)}}" class="btn btn-danger btn-xs" onclick="return confirm('Are You Sure To Delete {{ row.room }} from project {{ row.project }}?')">Delete</a>
+                                          <a href="{{url_for('closed_open', id=row.id, action='closed')}}" class="btn btn-secondary" >Close</a>
+                                      </td>
+                                  </tr>
+                                  {% endfor %}
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+            </div>
         {% endif %}
 
-        <h2 >Rooms I've joined</h2>
-        <ol>
-          {% for room in rooms %}
-            <li> {{room.id}}  {{room.project}} {{room.room}}  {{ room.batch }}  {{room.afilliation}} {{room.status}}
-              <a href="{{ url_for('viewer', ProjectName=room.project, RoomName=room.room, user=user, batchID=room.batch) }}"><button class="btn btn-primary">Continue</button></a></li>
-            <br> <br>
-          {% endfor %}
-        </ol>
+
+          <div class="container">
+              <div class="row">
+                  <div class="col md-12">
+                      <div class="jumbotron p-3">
+                          <h2><b> Rooms joined </b></h2>
+
+                          <table class="table table-hover table-striped">
+                              <tr>
+                                  <th>ID</th>
+                                  <th>Projects</th>
+                                  <th>Room</th>
+                                  <th>BatchID</th>
+                                  <th>Progress [%]</th>
+                                  <th>Status</th>
+                                  <th>Action</th>
+                              </tr>
+
+                              {% for row in rooms %}
+                              <tr>
+                                  <td>{{row.id}}</td>
+                                  <td>{{row.project}}</td>
+                                  <td>{{row.room}}</td>
+                                  <td>{{row.batch}}</td>
+                                  <td>{{row.progress}}</td>
+                                  <td>{{row.status}}</td>
+                                  <td>
+                                      <a href="{{ url_for('viewer', ProjectName=row.project, RoomName=row.room, user=user, batchID=row.batch) }}"
+                                         class="btn btn-primary">Continue</a>
+                                  </td>
+                              </tr>
+                              {% endfor %}
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+
+
+        {% if myprojects_closed != None %}
+            <div class="container">
+                  <div class="row">
+                      <div class="col md-12">
+                          <div class="jumbotron p-3">
+                              <h2><b> My Closed Rooms </b>  <button type="button"  class="btn btn-success float-right"
+                              data-toggle="modal" data-target="#mymodal">Add New Room</button> </h2>
+
+                              {% with messages = get_flashed_messages() %}
+                              {% if messages %}
+
+                              {% for message in messages %}
+                              <div class="alert alert-success alert-dismissable" role="alert">
+                                  <button type="button" class="close" data-dismiss="alert" aria-label="close">
+                                      <span aria-hidden="true">x</span>
+                                  </button>
+                                  {{message}}
+                              </div>
+                              {% endfor %}
+
+                              {% endif %}
+                              {% endwith %}
+
+                              <table class="table table-hover table-striped">
+                                  <tr>
+                                      <th>ID</th>
+                                      <th>Projects</th>
+                                      <th>Room</th>
+                                      <th>Progress [%]</th>
+                                      <th>status</th>
+                                      <th>Action</th>
+                                  </tr>
+
+                                 {% for row in myprojects_closed %}
+                                  <tr>
+                                      <td>{{row.id}}</td>
+                                      <td>{{row.project}}</td>
+                                      <td>{{row.room}}</td>
+                                      <td>{{row.progress}}</td>
+                                      <td>{{row.status}}</td>
+                                      <td>
+                                          <a href='#' class="btn btn-warning btn-xs">Download</a>
+                                          <a href="{{url_for('delete', ProjectName=row.project, RoomName=row.room, email=row.email)}}" class="btn btn-danger btn-xs" onclick="return confirm('Are You Sure To Delete {{ row.room }} from project {{ row.project }}?')">Delete</a>
+                                          <a href="{{url_for('closed_open', id=row.id, action='open')}}" class="btn btn-secondary" >Open</a>
+                                      </td>
+                                  </tr>
+                                  {% endfor %}
+                              </table>
+                          </div>
+                      </div>
+                  </div>
+            </div>
+        {% endif %}
 
         <!-- /END THE FEATURETTES -->
 

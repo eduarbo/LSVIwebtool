@@ -8,7 +8,7 @@ import pandas as pd
 
 import numpy as np
 from bokeh.client import push_session
-from flask import Flask, redirect, url_for, render_template, request
+from flask import Flask, redirect, url_for, render_template, request, flash
 from bokeh.util.string import encode_utf8
 from bokeh.embed.server import server_document, server_session
 from bokeh.document.document import Document
@@ -43,17 +43,19 @@ def kill_server():
 @app.route('/home')
 def home():
 
-    pjs = session_projects.query(VIprojects).all()
+    pjs_open = session_projects.query(VIprojects).filter_by(status='open').all()
+    pjs_closed = session_projects.query(VIprojects).filter_by(status='closed').all()
 
     print('=================================')
-    for pj in pjs:
-        print(pj.VIreq, pj.room, pj.status)
-        progress = get_room_status(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
-        pj.status = progress
-        #session_projects.commit()
+    for pjs in [pjs_open, pjs_closed]:
+        for pj in pjs:
+            #print(pj.VIreq, pj.room, pj.progress)
+            progress = get_room_progress(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
+            pj.progress = progress
+            #session_projects.commit()
     session_projects.close()
 
-    return render_template('index.html', pjs=pjs)
+    return render_template('index.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed)
 
 @app.route('/start')
 def start():
@@ -123,13 +125,13 @@ def new_projects():
 
             #add entry to tracker's database
             newentry = tracker(project=req.get('inputProjName'), room=req.get('inputRoomName'), batch=batchID,
-                             name=name, afilliation=afill, email=email, status=int(0))
+                             name=name, afilliation=afill, email=email, progress=int(0), status='open')
             session_tracker.add(newentry)
             session_tracker.commit()
 
             #add entry to projects database for each room
             newentry = VIprojects(project=req.get('inputProjName'), room=req.get('inputRoomName'),
-                             name=name, afilliation=afill, email=email, VIreq=Nreq, status=int(0))
+                             name=name, afilliation=afill, email=email, VIreq=Nreq, progress=int(0), status='open')
             session_projects.add(newentry)
             session_projects.commit()
 
@@ -153,10 +155,11 @@ def viewer(ProjectName, RoomName, user, batchID):
     # for room in rooms:
     #     print(room.name)
     #
-    # print('================== ROOMS ========================')
-    # pj = session_projects.query(VIprojects).all()
-    # for p in pj:
-    #     print(p.VIreq, p.name)
+    print('================== ROOMS ========================')
+    pj = session_projects.query(VIprojects).all()
+    for p in pj:
+     print(p.status, p.progress)
+    session_projects.close()
 
     if not os.path.isfile(userfile_path_csv):
 
@@ -207,7 +210,7 @@ def join(ProjectName, RoomName):
             else:
                 #add entry to database
                 newentry = tracker(project=ProjectName, room=RoomName, batch=batchID,
-                                 name=name, afilliation=afill, email=email, status=int(0))
+                                 name=name, afilliation=afill, email=email, progress=int(0), status='open')
                 session_tracker.add(newentry)
                 session_tracker.commit()
 
@@ -215,15 +218,11 @@ def join(ProjectName, RoomName):
     #else:
     author = session_projects.query(VIprojects).filter_by(room=RoomName, project=ProjectName).one()
     text = 'By %s from %s' %(author.name, author.afilliation)
-    #author.close()
+    session_projects.close()
     return render_template('join.html', title='Join %s' %(RoomName), button='Go to galleries', text=text)
 
 @app.route('/resume', methods=['GET', 'POST'])
 def resume():
-    '''
-   If joining a project room by clicking to a specific entry on projects/rooms status table,
-   you will have to identify yourself first
-    '''
 
     if request.method == 'POST':
         if request.form.get('make_gall') == 'continue':
@@ -234,14 +233,15 @@ def resume():
             afill = req.get('afilliation')
 
             user = session_tracker.query(tracker).filter_by(email=email).all()
+            session_tracker.close()
             if len(user) > 0:
                 return redirect(url_for('user_active_rooms', user=email))
             else:
-                text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
-                return render_template('join.html', title='Resume your Rooms', button='Continue', text=text)
 
-            #return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
-    #else:
+                text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
+                flash(text)
+                return render_template('join.html', title='Resume your Rooms', button='Continue')
+
     return render_template('join.html', title='Resume your Rooms', button='Continue')
 
 @app.route('/current_rooms/<user>')
@@ -251,49 +251,116 @@ def user_active_rooms(user):
     username = user+'_'+rooms[0].afilliation
 
     for room in rooms:
-        progress = get_user_status(ProjectName=room.project, RoomName=room.room,
+        progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
                                    user='%s_%s' %(room.email, room.afilliation), batchID=room.batch)
-        room.status = progress
+        room.progress = progress
     session_tracker.close()
 
-    myprojects = session_projects.query(VIprojects).filter_by(email=user).all()
 
-    for pj in myprojects:
-        #print(pj.VIreq, pj.room, pj.status)
-        progress = get_room_status(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
-        pj.status = progress
-        #session_projects.commit()
+    myprojects_open = session_projects.query(VIprojects).filter_by(email=user, status='open').all()
+    myprojects_closed = session_projects.query(VIprojects).filter_by(email=user, status='closed').all()
+
+    for myprojects in [myprojects_open, myprojects_closed]:
+        for pj in myprojects:
+            progress = get_room_progress(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
+            pj.progress = progress
+
     session_projects.close()
-    #print('----------------------------')
-    #print(myprojects)
 
-    return render_template('user_active_rooms.html', rooms=rooms, myprojects=myprojects, name=rooms[0].name, user=username)
+    return render_template('user_active_rooms.html', rooms=rooms, myprojects_open=myprojects_open, myprojects_closed=myprojects_closed, name=rooms[0].name, user=username)
 
 # This will let us Delete our book
 @app.route('/delete/<ProjectName>/<RoomName>/<email>', methods=['GET', 'POST'])
-
 def delete(ProjectName, RoomName, email):
+
     RoomToDelete = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
-    if request.method == 'POST':
-        if request.form.get('delete') == 'yes':
+    RoomToDelete_tracker = session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName).all()
 
-            #remove directory
-            pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
 
-            try:
-                shutil.rmtree(pathdir)
-            except OSError as e:
-                print("Error: %s : %s" % (pathdir, e.strerror))
+    try:
+        shutil.rmtree(pathdir)
+    except OSError as e:
+        print("Error: %s : %s" % (pathdir, e.strerror))
 
-            #delete data from database
-            session_projects.delete(RoomToDelete)
-            session_projects.commit()
+    #delete data from databases
+    session_projects.delete(RoomToDelete)
+    session_projects.commit()
+    session_projects.close()
 
-            return redirect(url_for('user_active_rooms', user=email))
-        if request.form.get('delete') == 'no':
-            return redirect(url_for('user_active_rooms', user=email))
-    else:
-        return render_template('delete.html', room=RoomToDelete)
+    print('========================= = = = = = = ')
+    rooms_left = session_projects.query(VIprojects).filter_by(project=ProjectName).all()
+    if len(rooms_left) < 1:
+        pathdir_project = os.path.abspath(os.getcwd())+'/projects/%s/' %(ProjectName)
+        try:
+            shutil.rmtree(pathdir_project)
+        except OSError as e:
+            print("Error: %s : %s" % (pathdir_project, e.strerror))
+
+
+    for room in RoomToDelete_tracker:
+        session_tracker.delete(room)
+        session_tracker.commit()
+    session_tracker.close()
+
+    flash("Room %s Deleted Successfully" %(RoomName))
+    return redirect(url_for('user_active_rooms', user=email))
+
+@app.route('/<action>/<int:id>', methods=['GET', 'POST'])
+def closed_open(id, action):
+
+    room_to_close = session_projects.query(VIprojects).filter_by(id=id).one()
+
+    print('========= Room to close ==============')
+    print(room_to_close.status)
+    room_to_close.status = action
+    session_projects.commit()
+    print(room_to_close.status)
+
+    project = room_to_close.project
+    room = room_to_close.room
+    email = room_to_close.email
+    session_projects.close()
+
+    rooms_tracker = session_tracker.query(tracker).filter_by(project=project, room=room).all()
+    for room in rooms_tracker:
+        room.status = action
+        session_tracker.commit()
+    session_tracker.close()
+
+    flash('You have successfully %s Room %s' %(action, room))
+    return redirect(url_for('user_active_rooms', user=email))
+
+
+# def delete(ProjectName, RoomName, email):
+#     RoomToDelete = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
+#     RoomToDelete_tracker = session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName).all()
+#     if request.method == 'POST':
+#         if request.form.get('delete') == 'yes':
+#
+#             #remove directory
+#             pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+#
+#             try:
+#                 shutil.rmtree(pathdir)
+#             except OSError as e:
+#                 print("Error: %s : %s" % (pathdir, e.strerror))
+#
+#             #delete data from databases
+#             session_projects.delete(RoomToDelete)
+#             session_projects.commit()
+#             session_projects.close()
+#
+#             for room in RoomToDelete_tracker:
+#                 session_tracker.delete(room)
+#                 session_tracker.commit()
+#             session_tracker.close()
+#
+#             return redirect(url_for('user_active_rooms', user=email))
+#         if request.form.get('delete') == 'no':
+#             return redirect(url_for('user_active_rooms', user=email))
+#     else:
+#         return render_template('delete.html', room=RoomToDelete)
 
 def find_batch_available(ProjectName, RoomName, user):
 
@@ -334,7 +401,7 @@ def find_batch_available(ProjectName, RoomName, user):
 
     return batchID
 
-def get_user_status(ProjectName, RoomName, user, batchID):
+def get_user_progress(ProjectName, RoomName, user, batchID):
 
     pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
     file = "%s/%s_%i.cvs" %(pathdir, user, batchID)
@@ -355,7 +422,7 @@ def get_user_status(ProjectName, RoomName, user, batchID):
 
     return np.round(100*progress/tot, 1)
 
-def get_room_status(ProjectName, RoomName, VIreq):
+def get_room_progress(ProjectName, RoomName, VIreq):
 
     pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
     files = glob.glob("%s/*.cvs" %(pathdir))
@@ -379,6 +446,17 @@ def get_key(my_dict, val):
 
     return "key doesn't exist"
 
+'''
+          <h2>My projects</h2>
+          <ol>
+            {% for pj in myprojects %}
+              <li> {{pj.id}}  {{pj.project}} {{pj.room}} {{pj.afilliation}} {{pj.status}}
+                <a href="{{url_for('delete', ProjectName=pj.project, RoomName=pj.room, email=pj.email)}}"><button class="btn btn-danger">Delete</button></a>
+                <a><button class="btn btn-success">Download</button></a></li>
+              <br> <br>
+            {% endfor %}
+          </ol>
+'''
 
 
 if __name__ == '__main__':

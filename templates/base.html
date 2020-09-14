@@ -22,6 +22,19 @@
     {% block css %}
     {% endblock %}
 
+    <link href="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.css" rel="stylesheet">
+
+    <style>
+      .select,
+      #locale {
+        width: 100%;
+      }
+      .like {
+        margin-right: 10px;
+      }
+    </style>
+
+
 </head>
 <body>
 <header>
@@ -68,6 +81,14 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
+
 <script type="text/javascript" src="{{url_for('static', filename='newfield.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static', filename='table.js')}}"></script>
+
+<script src="https://unpkg.com/tableexport.jquery.plugin/tableExport.min.js"></script>
+<script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.js"></script>
+<script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table-locale-all.min.js"></script>
+<script src="https://unpkg.com/bootstrap-table@1.17.1/dist/extensions/export/bootstrap-table-export.min.js"></script>
+
 </body>
 </html>

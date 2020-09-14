@@ -22,7 +22,8 @@ class tracker(Base_tracker):
     name = Column(String(250), nullable=False)
     afilliation = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
-    status = Column(Integer)
+    progress = Column(Integer)
+    status = Column(String(250), nullable=False)
 
 class VIprojects(Base_projects):
     __tablename__ = 'projects'
@@ -34,7 +35,8 @@ class VIprojects(Base_projects):
     afilliation = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
     VIreq = Column(Integer, nullable=False)
-    status = Column(Integer)
+    progress = Column(Integer)
+    status = Column(String(250), nullable=False)
 
 # creates a create_engine instance at the bottom of the file
 engine_tracker = create_engine('sqlite:///vi-tracker.db')
