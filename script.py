@@ -8,7 +8,7 @@ import pandas as pd
 
 import bokeh.plotting as bk
 from bokeh.models import ColumnDataSource, ImageURL, CustomJS, Span, OpenURL, TapTool, Div
-from bokeh.models.widgets import CheckboxGroup, RadioGroup
+from bokeh.models.widgets import CheckboxGroup, RadioGroup, Widget, Button, Slider
 from bokeh.layouts import gridplot, row, column, WidgetBox
 from bokeh.io import curdoc, show
 from bokeh.plotting import figure
@@ -37,8 +37,8 @@ def coordtopix(center, coord, size, scale):
 
 
 def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle='page', veto=None, info=None, grid=[2,2], m=4,
-                      radius=4/3600, comparison=None, layer_list=None, title=None, tab=False, tab_title=None, main_text=None,
-                         buttons_text=None, RGlabels=None, output=None, userfile_path=None):
+                  radius=4/3600, comparison=None, layer_list=None, title=None, tab=False, tab_title=None, main_text=None,
+                  buttons_text=None, RGlabels=None, output=None, userfile_path=None):
 
     '''
 
@@ -89,6 +89,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     plots = []
     sources = []
     layers = []
+    plots_i = []
 
     if userfile_path is not None:
         userfile = pd.read_csv(userfile_path + '.cvs')
@@ -97,8 +98,12 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     if RGlabels is not None:
         RGlabels_id = {key:i for i, key in enumerate(RGlabels)}
 
-    def my_radio_handler(event, idx):
-        print(event, RGlabels[event], idx)
+    def my_radio_handler(event, idx, num):
+        print(event, RGlabels[event], idx, num, RGlabels[-1])
+
+        p = plots_i[num]
+        if RGlabels[event] == RGlabels[-1]: p.outline_line_color = "red"
+        else: p.outline_line_color = "green"
 
         if userfile_path is not None:
             userfile = pd.read_csv(userfile_path + '.cvs')
@@ -115,6 +120,10 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     scale_unit='pixscale'
 
     scale=0.262
+
+    m = 4
+    S = 2
+    #p.outline_line_color = "red"
 
     boxsize = 2*m*radius*3600
     size = int(round(boxsize/scale))
@@ -160,9 +169,9 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
                 for key in info.keys():
                     TOOLTIPS.append((key, '@'+key))
 
-            p = figure(plot_width=size, plot_height=size, tooltips=TOOLTIPS, tools="tap")
+            p = figure(plot_width=size*S, plot_height=size*S, tooltips=TOOLTIPS, tools="tap, save, zoom_in, zoom_out, crosshair")
             p.axis.visible = False
-            p.min_border = 0
+            #p.min_border = 0
 
             layers2 = []
             for layer in layer_list:
@@ -216,17 +225,40 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
             p.add_layout(lineh)
             p.add_layout(linew)
+            p.background_fill_color = "black"
+            p.outline_line_width = 20
+            p.outline_line_alpha = 0.7
+            print('==================')
+            print(current_RGval.iloc[idx], RGlabels[-1])
+            if current_RGval.iloc[idx] == RGlabels[-1]:
+                p.outline_line_color = "red"
+            else:
+                p.outline_line_color = "green"
+            p.xgrid.grid_line_color = None
+            p.ygrid.grid_line_color = None
 
             if RGlabels is not None:
                 print(current_RGval.iloc[idx], RGlabels_id[current_RGval.iloc[idx]])
-                rbt = RadioGroup(labels=RGlabels, active=RGlabels_id[current_RGval.iloc[idx]], default_size=50)
-                rbt.on_click(partial(my_radio_handler, idx=idx))
-                plots.append(WidgetBox(row(p, rbt)))
+                rbt = RadioGroup(labels=RGlabels, active=RGlabels_id[current_RGval.iloc[idx]], sizing_mode='scale_height')
+                #default_size=20 width_policy='min', sizing_mode="scale_both"
+                rbt.on_click(partial(my_radio_handler, idx=idx, num=num))
+                plots.append(row(children=[p, rbt]))
+                plots_i.append(p)
             else:
                 plots.append(p)
 
             sources.append(circle_i)
             layers.append(layers2)
+
+    def update_width(attr, old, new):
+        for p in plots_i:
+            print(old, new)
+            p.width=size*new
+            p.height=size*new
+
+    #button = Button()
+    size_slider = Slider(start=1, end=5, value=2, step=1, title="Figure Size")
+    size_slider.on_change("value", update_width)
 
     checkbox = CheckboxGroup(labels=list(veto.keys()), active=list(np.arange(len(veto))))
     iterable = [elem for part in [[('_'.join(['line',str(figid),str(lineid)]),line) for lineid,line in enumerate(elem)] for figid,elem in enumerate(sources)] for elem in part]
@@ -234,7 +266,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     callback = CustomJS(args={key:value for key,value in iterable+[('checkbox',checkbox)]}, code=checkbox_code)
     checkbox.js_on_click(callback)
 
-    radio = RadioGroup(labels=layer_list, active=0)
+    radio = RadioGroup(labels=layer_list, active=2)
     iterable2 = [elem for part in [[('_'.join(['line',str(figid),str(lineid)]),line) for lineid,line in enumerate(elem)] for figid,elem in enumerate(layers)] for elem in part]
     #
     N = len(layer_list)
@@ -251,17 +283,30 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     callback2 = CustomJS(args={key:value for key,value in iterable2+[('radio',radio)]}, code=radiogroup_code)
     radio.js_on_change('active', callback2)
 
-    grid = gridplot(plots, ncols=cols, plot_width=256, plot_height=256, sizing_mode = 'stretch_both')
-
     # Put controls in a single element
-    controls = column(WidgetBox(radio, checkbox), sizing_mode='fixed', css_classes=['scrollable'])
+    grids = WidgetBox(gridplot(plots, ncols=cols, plot_width=256, plot_height=256, sizing_mode = 'stretch_both'), name="grids")
+    #grids = gridplot(plots, ncols=5)
+
+    # def update_cols(attr, old, new):
+    #     pass
+    #
+    # cols_slider = Slider(start=1, end=5, value=2, step=1, title="Number of Columns")
+    # cols_slider.on_change("value", update_cols)
+
+    controls = column(children=[WidgetBox(height=100), WidgetBox(Div(text='<h4>Layers</h4>'), radio), WidgetBox(height=100), WidgetBox(Div(text='<h4>Flags</h4>'),checkbox), WidgetBox(height=100), WidgetBox(Div(text='<h4>Feature</h4>'), size_slider)])
+
+
+    #controls = column(radio, checkbox)
 
     if title is None: title = '--'
     if main_text is None: main_text = '...'
     if buttons_text is None: buttons_text = '...'
 
-    layout = column(Div(text='<h1>%s</h1>' %(title)), Div(text='<h3>%s</h3>' %(main_text)), row(column(Div(text='<h3>%s</h3>' %(buttons_text)), controls), grid))
+    #layout = column(Div(text='<h1>%s</h1>' %(title)), Div(text='<h3>%s</h3>' %(main_text)), row(column(Div(text='<h3>%s</h3>' %(buttons_text)), controls), grid))
     #show(layout)
+
+    layout = column(row(controls, grids))
+
     return layout
 
 #if __name__ == '__main__':
@@ -306,7 +351,7 @@ try:
     layer_list = args.get('layer_list')[0] #pass this as a list
 except:
     dr, survey = 'dr8', 'south'
-    layer_list = ['%s-%s' %(dr, survey), '%s-%s-model' %(dr, survey), '%s-%s-resid' %(dr, survey)]
+    layer_list = ['%s-%s-resid' %(dr, survey), '%s-%s-model' %(dr, survey), '%s-%s' %(dr, survey), ]
 
 # try:
 #     centre = args.get('centre')[0] #pass this as a string
@@ -337,7 +382,7 @@ RGlabels = RGlabels + unclassified_label
 title = None
 main_text = None
 buttons_text = None
-grid = [5,2]
+grid = [8,5]
 savefile = None
 
 print(cathpath)
@@ -356,4 +401,6 @@ layout = html_postages(coord=coord, idx=idx, veto=veto, info=info, grid=grid, la
                         RGlabels=RGlabels, output=None, userfile_path=userfile_path)
 
 curdoc().add_root(layout)
+#curdoc().add_root(controls)
+#curdoc().template_variables["grids"] = grid
 #show(layout)

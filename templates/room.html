@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
+
 <div>
-  <div class="container marketing">
-    {{ bokeh_script|safe }}
+  <div class="container marketing" style="padding-top:50px" >
+    <h1>Gallery Room</h1>
+    <h4>Description of gallery</h4>
+
+    <div class="row">
+      {{ bokeh_script|safe }}
+    </div>
 
     &nbsp;
     &nbsp;
