@@ -32,7 +32,7 @@ session_tracker = DBSession_tracker()
 session_projects = DBSession_projects()
 
 bokeh_process = subprocess.Popen(
-    ['python', '-m', 'bokeh', 'serve', '--allow-websocket-origin=localhost:8081', 'script.py'], stdout=subprocess.PIPE)
+    ['python', '-m', 'bokeh', 'serve', '--port 8081', '--allow-websocket-origin="*"', 'script.py'], stdout=subprocess.PIPE)
 
 @atexit.register
 def kill_server():
@@ -167,7 +167,7 @@ def viewer(ProjectName, RoomName, user, batchID):
 
     #bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
 
-    with pull_session(url='http://localhost:5006/script') as session:
+    with pull_session(url='http://localhost:8081/script') as session:
         doc = session.document
         #grid = doc.get_model_by_name("grids")
         bokeh_script = server_document(url='http://localhost:8081/script', arguments=args)
