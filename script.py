@@ -3,14 +3,13 @@ from functools import partial
 
 import numpy as np
 import os
-import random
 import pandas as pd
 
 import bokeh.plotting as bk
 from bokeh.models import ColumnDataSource, ImageURL, CustomJS, Span, OpenURL, TapTool, Div
 from bokeh.models.widgets import CheckboxGroup, RadioGroup, Widget, Button, Slider
 from bokeh.layouts import gridplot, row, column, WidgetBox
-from bokeh.io import curdoc, show
+from bokeh.io import curdoc
 from bokeh.plotting import figure
 
 def coordtopix(center, coord, size, scale):

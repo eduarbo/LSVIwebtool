@@ -9,8 +9,7 @@ import pandas as pd
 import numpy as np
 from bokeh.client import pull_session
 from flask import Flask, redirect, url_for, render_template, request, flash
-from bokeh.embed.server import server_document, server_session
-from bokeh.io import curdoc
+from bokeh.embed.server import server_document
 
 app = Flask(__name__)
 
@@ -31,12 +30,12 @@ DBSession_projects = sessionmaker(bind=engine_projects)
 session_tracker = DBSession_tracker()
 session_projects = DBSession_projects()
 
-bokeh_process = subprocess.Popen(
-    ['python', '-m', 'bokeh', 'serve', '--port 8081', '--allow-websocket-origin="*"', 'script.py'], stdout=subprocess.PIPE)
-
-@atexit.register
-def kill_server():
-    bokeh_process.kill()
+# bokeh_process = subprocess.Popen(
+#     ['python', '-m', 'bokeh', 'serve', '--port 5006', '--allow-websocket-origin="*"', 'script.py'], stdout=subprocess.PIPE)
+#
+# @atexit.register
+# def kill_server():
+#     bokeh_process.kill()
 
 @app.route('/')
 @app.route('/home')
@@ -167,13 +166,13 @@ def viewer(ProjectName, RoomName, user, batchID):
 
     #bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
 
-    with pull_session(url='http://localhost:8081/script') as session:
-        doc = session.document
-        #grid = doc.get_model_by_name("grids")
-        bokeh_script = server_document(url='http://localhost:8081/script', arguments=args)
-        print('========================')
-        print(bokeh_script)
-        print('========================')
+    # with pull_session(url='http://localhost:5006/script') as session:
+    #     doc = session.document
+    #     #grid = doc.get_model_by_name("grids")
+    bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+    #     print('========================')
+    #     print(bokeh_script)
+    #     print('========================')
 
     return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
 
@@ -417,5 +416,5 @@ def get_key(my_dict, val):
 
 if __name__ == '__main__':
     HOST = '0.0.0.0'
-    PORT = 8080
+    PORT = 5000
     app.run(HOST, PORT, debug=True)

@@ -1,0 +1,22 @@
+
+version: '3'
+services:
+  bokehapp:
+    build:
+      context: .
+      dockerfile: bokehapp.Dockerfile
+    ports:
+      - '5006:5006'
+    volumes:
+      - './:/app'
+  flaskapp:
+    depends_on:
+      - bokehapp
+    build:
+      context: .
+      dockerfile: flaskapp.Dockerfile
+    volumes:
+      - './:/app'
+    ports:
+      - '5000:5000'
+
