@@ -1,6 +1,6 @@
 
 # for creating the mapper code
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 
 # for configuration and class code
 from sqlalchemy.ext.declarative import declarative_base
@@ -30,6 +30,7 @@ class VIprojects(Base_projects):
 
     id = Column(Integer, primary_key=True)
     project = Column(String(250), nullable=False)
+    project_description = Column(String(500), nullable=False)
     room = Column(String(250), nullable=False)
     name = Column(String(250), nullable=False)
     afilliation = Column(String(250), nullable=False)
@@ -37,6 +38,7 @@ class VIprojects(Base_projects):
     VIreq = Column(Integer, nullable=False)
     progress = Column(Integer)
     status = Column(String(250), nullable=False)
+    VI = Column(Boolean, default=True)
 
 # creates a create_engine instance at the bottom of the file
 engine_tracker = create_engine('sqlite:///vi-tracker.db')

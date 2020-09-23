@@ -10,6 +10,7 @@ import numpy as np
 from bokeh.client import pull_session
 from flask import Flask, redirect, url_for, render_template, request, flash
 from bokeh.embed.server import server_document
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -30,6 +31,10 @@ DBSession_projects = sessionmaker(bind=engine_projects)
 session_tracker = DBSession_tracker()
 session_projects = DBSession_projects()
 
+app.config["FILE_UPLOADS"] = os.path.join(os.getcwd(), 'data_tmp')
+app.config["ALLOWED_FILE_EXTENSIONS"] = ['NPY', 'FITS', 'CVS']
+app.config["MAX_FILE_FILESIZE"] = 0.2 * 1024 * 1024
+
 # bokeh_process = subprocess.Popen(
 #     ['python', '-m', 'bokeh', 'serve', '--port 5006', '--allow-websocket-origin="*"', 'script.py'], stdout=subprocess.PIPE)
 #
@@ -41,8 +46,9 @@ session_projects = DBSession_projects()
 @app.route('/home')
 def home():
 
-    pjs_open = session_projects.query(VIprojects).filter_by(status='open').all()
-    pjs_closed = session_projects.query(VIprojects).filter_by(status='closed').all()
+    pjs_open = session_projects.query(VIprojects).filter_by(status='open', VI=True).all()
+    pjs_closed = session_projects.query(VIprojects).filter_by(status='closed', VI=True).all()
+    pjs_nonVI = session_projects.query(VIprojects).filter_by(VI=False).all()
 
     #update progress for each room
     for pjs in [pjs_open, pjs_closed]:
@@ -51,130 +57,246 @@ def home():
             pj.progress = progress
     session_projects.close()
 
-    return render_template('index.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed)
+    return render_template('index.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed, myprojects_nonVI=pjs_nonVI)
+
+def get_file_info(file_path, filename):
+
+    ext = filename.rsplit(".", 1)[1]
+    file_info = {}
+    if ext.upper() == 'NPY':
+        data = np.load(file_path)
+        file_cols = data.dtype.names
+        file_info['file_cols'] = file_cols
+        file_info['array_size'] = len(data)
+        for col in file_cols:
+            if data[col].dtype == 'bool':
+                file_info['%s_sum' %(col)] = np.sum(data[col])
+
+        return file_info
 
 
-@app.route('/new_project', methods=['GET', 'POST'])
-def new_projects():
+
+@app.route('/new_room/<int:id>', methods=['GET', 'POST'])
+@app.route('/new_project/', methods=['GET', 'POST'])
+def new_projects(id=None):
+
+    if id is not None:
+        pjs = session_projects.query(VIprojects).filter_by(id=id).all()
+        session_projects.close()
+        project = pjs[0].project
+        template = 'new_room.html'
+    else:
+        template = 'new_project.html'
+        project = None
+
+    file_info = {'file_cols':[]}
+
     if request.method == 'POST':
-        req = {}
-        req_ = request.form
-        for key, val in zip(req_.keys(), req_.values()):
-            req[key] = val
+
+        #if request.files:
+        if request.form.get('submit_file') == 'submit':
+
+            file = request.files["file"]
+            print('FILE:',file)
+
+            if file.filename == "":
+                print("No filename")
+                return render_template(template, request=request, disabled=True, file_info=file_info, id=id, project=project)
+
+            if allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config["FILE_UPLOADS"], filename)
+
+                file.save(file_path)
+                print("Image saved")
+
+                file_info = get_file_info(file_path, filename)
+
+                return render_template(template, request=request, disabled=False, file_info=file_info, id=id, project=project)
+
+            else:
+                print("That file extension is not allowed")
+                return render_template(template, request=request, disabled=True, file_info=file_info, id=id, project=project)
+
 
         if request.form.get('make_gall') == 'continue':
 
+            #create input data dict based on request
+            req = {}
+            req['room'] = request.form.get('room')
             #create project directory root
-            pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(req.get('inputProjName'), req.get('inputRoomName'))
-            projPath = os.path.abspath(os.getcwd())+'/projects/%s/' %(req.get('inputProjName'))
-            os.makedirs(pathdir, exist_ok=True)
+            if id is None:
+                #don't forget the author details
+                for key in ['name', 'afilliation', 'email', 'project', 'project_description']:
+                    req[key] = request.form.get(key)
 
-            email = req.get('inputSubmitterEmail')
-            afill = req.get('inputSubmitterAfill')
-            name = req.get('inputSubmitterName')
-            user = email
-
-            #create user array
-            if req.get('catpath') is not None: #pass this as a string
-                catpath = req.get('catpath')
+                room_path = os.path.join(os.getcwd(), 'projects', request.form.get('project'), request.form.get('room'))
+                #proj_path = os.path.join(os.getcwd(), 'projects', request.form.get('project'))
             else:
-                catpath = os.path.abspath(os.getcwd())+'/projects/_files/VITestFile.npy'
+                project_details = {'name':pjs[0].name, 'afilliation':pjs[0].afilliation, 'email':pjs[0].email, 'project':pjs[0].project, 'project_description':pjs[0].project_description}
+                for key, value in zip(project_details.keys(), project_details.values()):
+                    req[key] = value
 
-            if req.get('centre') is not None:#pass this as a string
-                centre = req.get('centre')
+                room_path = os.path.join(os.getcwd(), 'projects', pjs[0].project, req.get('room'))
+
+            os.makedirs(room_path, exist_ok=True)
+
+            #get file and save it to rooms path
+            file = request.files["file"]
+            #here an intermediate step to convert file to .npy
+            file_path = os.path.join(room_path, 'file.npy')
+            print('==========')
+            print(file_path)
+            file.save(file_path)
+
+            data = np.load(file_path)
+
+            if request.form.get('centres') == 'ALL':
+                idx = list(np.where(np.ones_like(data, dtype=bool)))[0]
             else:
-                centre = 'centre'
+                idx = list(np.where(data[request.form.get('centres')]))[0]
 
-            #for each ROOM
-            rows, cols = 8, 5 #req.get('rows'), req.get('cols')
-            Nsamples = rows*cols
-            Nreq = 40 #req.get('Nreq')
-            Nbatchs = int(Nreq/Nsamples)
-            grid = [rows,cols]
-
-            data = np.load(catpath)
-            idx = list(np.where(data[centre]))[0]
             random.shuffle(idx)
-            idxs = idx[:Nreq].reshape(Nbatchs,Nsamples)
-            roomname = req.get('inputRoomName')
+
+            if len(idx) < int(request.form.get('VIrequest')):
+                flash('VI Requested larger than sample. Maximum is %i' %(len(idx)))
+                #raise ValueError('Samples are less than required.')
+                return render_template('new_project.html', disabled=True, file_info=file_info, id=id)
+
+            req['Ncols'] = int(request.form.get('Ncols')) #number of columns in gallery grid #incorporate to html
+            req['VIrequest'] = int(request.form.get('VIrequest'))
+            req['BatchSize'] = int(request.form.get('BatchSize'))
+            req['BoxSize'] = int(request.form.get('BoxSize'))
+            module_Nbatchs = int(req['VIrequest']//req['BatchSize'])
+
+            if req['VIrequest'] > req['BatchSize']:
+                idxs = idx[:module_Nbatchs * req['BatchSize']].reshape(module_Nbatchs, req['BatchSize']).tolist()
+                if req['VIrequest'] / module_Nbatchs * req['BatchSize'] > 1:
+                    idxs.append(idx[module_Nbatchs * req['BatchSize']:req['VIrequest']].tolist())
+            else:
+                idxs = idx[:req['VIrequest']].reshape(1, req['VIrequest']).tolist()
+
+            req['Nbatchs'] = len(idxs)
+            req['Ncentres'] = len(idx)
 
             for num, i in enumerate(idxs):
-                req['%s_%s' %(roomname, str(num))] = np.array(i)
+                req['%s_%s' %(request.form.get('room'), str(num))] = np.array(i)
+            req['%s_Ndata' %(request.form.get('room'))] = len(data)
 
-            req['%s_Nbatchs' %(roomname)] = Nbatchs
-            req['%s_Ndata' %(roomname)] = len(data)
+            #input params for viewer
+
+            req['catpath'] = file_path
+            req['coord_names'] = [request.form.get('RA'), request.form.get('DEC')]
+
+            if (len(request.form.getlist('label_col')) < 2) & ('None' in request.form.getlist('label_col')):
+                req['labels'] = None
+            else:
+                req['labels'] = {key:val for key, val in zip(request.form.getlist('label_name'), request.form.getlist('label_col'))}
+
+            if (len(request.form.getlist('info_col')) < 2) & ('None' in request.form.getlist('info_col')):
+                req['info_list'] = None
+            else:
+                req['info_list'] = {key:val for key, val in zip(request.form.getlist('info_name')+['RA', 'DEC'], request.form.getlist('info_col')+req['coord_names'])}
 
 
-            np.save('%s%s' %(projPath, 'requests'), req)
+            layers = []
+            for i in request.form.getlist('layers'):
+                layers.append('%s-resid' %(i))
+                layers.append('%s-model' %(i))
+                layers.append('%s' %(i))
+
+            req['layer_list'] = layers
+            req['centre'] = request.form.get('centres')
+
+            if (len(request.form.getlist('VIlabels')) < 2) & ('' in request.form.getlist('VIlabels')):
+                req['RGlabels'] = None
+                VI = False
+            else:
+                req['RGlabels'] = request.form.getlist('VIlabels')
+                VI = True
+
+            #save dict in room directory
+            np.save(os.path.join(room_path, 'requests'), req)
+
+            for key in req.keys():
+                print('%s: \t %s' %(key, req[key]))
 
             #Export user details of project and room and batchID to database
             batchID = 0 #assign first batchID
 
-            #add entry to tracker's database
-            newentry = tracker(project=req.get('inputProjName'), room=req.get('inputRoomName'), batch=batchID,
-                             name=name, afilliation=afill, email=email, progress=int(0), status='open')
-            session_tracker.add(newentry)
-            session_tracker.commit()
+            #add entry to tracker's database only if project is VI
+            if VI:
+                newentry = tracker(project=req.get('project'), room=req.get('room'), batch=batchID,
+                                    name=req.get('name'), afilliation=req.get('afilliation'), email=req.get('email'),
+                                        progress=int(0), status='open')
+                session_tracker.add(newentry)
+                session_tracker.commit()
 
             #add entry to projects database for each room
-            newentry = VIprojects(project=req.get('inputProjName'), room=req.get('inputRoomName'),
-                             name=name, afilliation=afill, email=email, VIreq=Nreq, progress=int(0), status='open')
+            newentry = VIprojects(project=req.get('project'), project_description=req.get('project_description'), room=req.get('room'),
+                                    name=req.get('name'), afilliation=req.get('afilliation'), email=req.get('email'),
+                                        VIreq=req.get('VIrequest'), progress=int(0), status='open', VI=VI)
             session_projects.add(newentry)
             session_projects.commit()
 
-            return redirect(url_for('viewer', ProjectName=req.get('inputProjName'), RoomName=req.get('inputRoomName'), user=user, batchID=batchID))
+            return redirect(url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=req.get('email'), batchID=batchID))
+            #return render_template('new_project.html', request=request, disabled=False, file_info=file_info)
     else:
-        return render_template('new_project.html')
+        return render_template(template, disabled=True, file_info=file_info, id=id, project=project)
+
 
 #galleries page
 @app.route('/<ProjectName>/<RoomName>/<user>/<int:batchID>')
 def viewer(ProjectName, RoomName, user, batchID):
 
-    reqPath = os.path.abspath(os.getcwd())+'/projects/%s/requests.npy' %(ProjectName)
+    reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
     req = np.load(reqPath, allow_pickle=True).item()
-    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
-    userfile_path = '%s%s_%s' %(pathdir, user, str(batchID))
+    userfile_path = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, '%s_%s' %(user, str(batchID)))
     userfile_path_csv = '%s.cvs' %(userfile_path)
+
     idx = req.get('%s_%s' %(RoomName, str(batchID)))
-    Nbatchs = req['%s_Nbatchs' %(RoomName)]
+    Nbatchs = req['Nbatchs']
 
-    if not os.path.isfile(userfile_path_csv):
+    args = {}
+    args['batchID'] = batchID
+    args['reqPath'] = reqPath
 
-        #create selections file
-        pddata = {'data':np.full(req.get('%s_Ndata' %(RoomName)), 'NA', dtype='S4')}
-        selections = pd.DataFrame(pddata, columns=["data"])
-        unclassified_label = ['UNCL']
 
-        #get centres from batchID
-        selections.iloc[idx] = unclassified_label[0]
-        selections.to_csv('%s.cvs' %(userfile_path), index=False)
+    if req.get('RGlabels') is not None:
 
-        try:
-            session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, batch=batchID, email=user).one()
-        except:
-            usr = session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, email=user).all()
-            print('Data entry does not exist. Creating new entry for this user')
-            #add entry to database
-            newentry = tracker(project=usr[0].project, room=usr[0].room, batch=batchID,
-                             name=usr[0].name, afilliation=usr[0].afilliation, email=usr[0].email, progress=int(0), status='open')
-            session_tracker.add(newentry)
-            session_tracker.commit()
-            session_tracker.close()
+        if not os.path.isfile(userfile_path_csv) :
 
-    #args = {key:req.get(key)  for key in ['catpath', 'labels', 'coord_names', 'info_list', 'layer_list', 'centre', 'RGlabels']}
-    args = {'userfile_path':userfile_path, 'idx':idx}
+            #create selections file
+            pddata = {'data':np.full(req.get('%s_Ndata' %(RoomName)), 'NA', dtype='S4')}
+            selections = pd.DataFrame(pddata, columns=["data"])
+            unclassified_label = ['UNCL']
 
-    #bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+            #get centres from batchID
+            selections.iloc[idx] = unclassified_label[0]
+            selections.to_csv('%s.cvs' %(userfile_path), index=False)
 
-    # with pull_session(url='http://localhost:5006/script') as session:
-    #     doc = session.document
-    #     #grid = doc.get_model_by_name("grids")
-    bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-    #     print('========================')
-    #     print(bokeh_script)
-    #     print('========================')
+            #If user not in database, create entry for that user
+            try:
+                session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, batch=batchID, email=user).one()
+            except:
+                usr = session_tracker.query(tracker).filter_by(project=ProjectName, room=RoomName, email=user).all()
+                print('Data entry does not exist. Creating new entry for this user')
+                #add entry to database
+                newentry = tracker(project=usr[0].project, room=usr[0].room, batch=batchID,
+                                 name=usr[0].name, afilliation=usr[0].afilliation, email=usr[0].email, progress=int(0), status='open')
+                session_tracker.add(newentry)
+                session_tracker.commit()
+                session_tracker.close()
 
-    return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
+        args['userfile_path'] = userfile_path
+        bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
+
+    else:
+
+        args['userfile_path'] = None
+        bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
 
 #/
 #
@@ -193,7 +315,7 @@ def join(ProjectName, RoomName):
 
             #Export user details of project and room and batchID to database
             batchID = find_batch_available(ProjectName, RoomName, user) #assign batchID based on availability
-            pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+            pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
             userfile_path = '%s%s_%s' %(pathdir, user, str(batchID))
             userfile_path_csv = '%s.cvs' %(userfile_path)
 
@@ -214,7 +336,7 @@ def join(ProjectName, RoomName):
         author = session_projects.query(VIprojects).filter_by(room=RoomName, project=ProjectName).one()
         text = 'By %s from %s' %(author.name, author.afilliation)
         session_projects.close()
-        return render_template('join.html', title='Join %s' %(RoomName), button='Go to galleries', text=text)
+        return render_template('join.html', button='Go to galleries', author=author, join=True)
 
 @app.route('/resume', methods=['GET', 'POST'])
 def resume():
@@ -227,14 +349,17 @@ def resume():
 
             usr = session_tracker.query(tracker).filter_by(email=email).all()
             session_tracker.close()
-            if len(usr) > 0:
+            pjs = session_projects.query(VIprojects).filter_by(email=email).all()
+            session_projects.close()
+
+            if (len(usr) > 0) or (len(pjs) > 0):
                 return redirect(url_for('user_active_rooms', user=email))
             else:
                 text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
                 flash(text)
-                return render_template('join.html', title='Resume your Rooms', button='Continue')
+                return render_template('join.html', button='Continue', join=False)
 
-    return render_template('join.html', title='Resume your Rooms', button='Continue')
+    return render_template('join.html', button='Continue', join=False)
 
 @app.route('/current_rooms/<user>')
 def user_active_rooms(user):
@@ -242,14 +367,22 @@ def user_active_rooms(user):
     rooms = session_tracker.query(tracker).filter_by(email=user).all()
     #username = user+'_'+rooms[0].afilliation
 
-    for room in rooms:
-        progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
-                                   user=user, batchID=room.batch)
-        room.progress = progress
-    session_tracker.close()
+    if len(rooms) > 0:
+        for room in rooms:
+            progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
+                                       user=user, batchID=room.batch)
+            room.progress = progress
+        session_tracker.close()
+        name = rooms[0].name
 
-    myprojects_open = session_projects.query(VIprojects).filter_by(email=user, status='open').all()
-    myprojects_closed = session_projects.query(VIprojects).filter_by(email=user, status='closed').all()
+    pjs = session_projects.query(VIprojects).filter_by(email=user).all()
+    session_projects.close()
+    if len(pjs) > 0:
+        name = pjs[0].name
+
+    myprojects_open = session_projects.query(VIprojects).filter_by(email=user, status='open', VI=True).all()
+    myprojects_closed = session_projects.query(VIprojects).filter_by(email=user, status='closed', VI=True).all()
+    myprojects_nonVI = session_projects.query(VIprojects).filter_by(email=user, VI=False).all()
 
     for myprojects in [myprojects_open, myprojects_closed]:
         for pj in myprojects:
@@ -258,7 +391,9 @@ def user_active_rooms(user):
 
     session_projects.close()
 
-    return render_template('user_active_rooms.html', rooms=rooms, myprojects_open=myprojects_open, myprojects_closed=myprojects_closed, name=rooms[0].name, user=user)
+    return render_template('user_active_rooms.html', rooms=rooms, myprojects_open=myprojects_open,
+                           myprojects_closed=myprojects_closed, myprojects_nonVI=myprojects_nonVI,
+                           name=name, user=user)
 
 # This will let us Delete our book
 @app.route('/delete/<ProjectName>/<RoomName>/<email>', methods=['GET', 'POST'])
@@ -273,7 +408,7 @@ def delete(ProjectName, RoomName, email):
         session_tracker.commit()
     session_tracker.close()
 
-    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
 
     try:
         shutil.rmtree(pathdir)
@@ -285,7 +420,7 @@ def delete(ProjectName, RoomName, email):
     session_projects.commit()
     session_projects.close()
 
-    print('========================= = = = = = = ')
+    #print('========================= = = = = = = ')
     rooms_left = session_projects.query(VIprojects).filter_by(project=ProjectName).all()
     session_projects.close()
     if len(rooms_left) < 1:
@@ -327,18 +462,48 @@ def closed_open(id, action):
     flash('You have successfully %s Room %s' %(action, room))
     return redirect(url_for('user_active_rooms', user=email))
 
+# @app.route('/uploader', methods = ['GET', 'POST'])
+# def upload_file():
+#     print('====== outside =============')
+#     if request.method == 'POST':
+#         if request.form.get('submit') == 'submit':
+#             print('====== inside =============')
+#             f = request.files['file']
+#             f.save(secure_filename(f.filename))
+#             return 'file %s uploaded successfully' %(f.filename)
+
 
 #==============================
 #Some defs
 #==============================
 
+def allowed_file(filename):
+
+    if not "." in filename:
+        return False
+
+    ext = filename.rsplit(".", 1)[1]
+
+    if ext.upper() in app.config["ALLOWED_FILE_EXTENSIONS"]:
+        return True
+    else:
+        return False
+
+
+def allowed_file_filesize(filesize):
+
+    if int(filesize) <= app.config["MAX_FILE_FILESIZE"]:
+        return True
+    else:
+        return False
+
 def find_batch_available(ProjectName, RoomName, user):
 
-    reqPath = os.path.abspath(os.getcwd())+'/projects/%s/requests.npy' %(ProjectName)
+    reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
     req = np.load(reqPath, allow_pickle=True).item()
-    Nbatchs = req.get('%s_Nbatchs' %(RoomName))
+    Nbatchs = req.get('Nbatchs')
 
-    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
     files = glob.glob("%s/*.cvs" %(pathdir))
 
     batchs_in_use = []
@@ -373,10 +538,10 @@ def find_batch_available(ProjectName, RoomName, user):
 
 def get_user_progress(ProjectName, RoomName, user, batchID):
 
-    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
     file = "%s/%s_%i.cvs" %(pathdir, user, batchID)
 
-    reqPath = os.path.abspath(os.getcwd())+'/projects/%s/requests.npy' %(ProjectName)
+    reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
     req = np.load(reqPath, allow_pickle=True).item()
     idxs = req.get('%s_%s' %(RoomName, str(batchID)))
     tot = len(idxs)
@@ -391,7 +556,7 @@ def get_user_progress(ProjectName, RoomName, user, batchID):
 
 def get_room_progress(ProjectName, RoomName, VIreq):
 
-    pathdir = os.path.abspath(os.getcwd())+'/projects/%s/%s/' %(ProjectName, RoomName)
+    pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
     files = glob.glob("%s/*.cvs" %(pathdir))
 
     progress = 0

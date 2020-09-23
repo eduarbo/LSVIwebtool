@@ -3,44 +3,12 @@
 {% block content %}
 
     <div class="container marketing" style="padding-top:50px" >
-        <h1>Project Setup</h1>
 
+        <h1>Add room to project <b>{{project}}</b></h1>
 
-
-        <form style="padding-top:50px" action="{{url_for('new_projects')}}" method="post" enctype="multipart/form-data">
-
-            <h3>Tell us who you are</h3>
-            <h6>This information is only to keep track of everyones projects. You can delete your projects latter, and with it, your data.</h6>
-            &nbsp;
-
-            <div class="form-group row">
-                <div class="col-md-4 mb-3">
-                    <input type="text" class="form-control" id="name" name="name" placeholder="First and Last Name" value="{{ request.form['name'] }}"  required>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <input type="text" class="form-control" id="afilliation" name="afilliation" placeholder="Afilliation" value="{{ request.form['afilliation'] }}" required>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Academic email"  value="{{ request.form['email'] }}" required>
-                </div>
-            </div>
-
-            <h3>Project details</h3>
-            <h6>A project can be divided into various visual inspections (VI) scenariis that we call <b>ROOMS</b>. Each room has it's own file and its own set of parameters.</h6>
-            &nbsp;
-
-            <div class="form-group row">
-                <div class="col-md-6 mb-3">
-                    <input type="text" class="form-control" id="project" name="project" placeholder="Project Title" value="{{ request.form['project'] }}" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <textarea class="form-control" id="project_description" name="project_description" rows="2" value="{{ request.form['project_description'] }}" placeholder="Description of project. e.g. 'Sets of galleries show BGS targets at different magnitude and colour ranges.' (Optional)"></textarea>
-                </div>
-            </div>
+        <form style="padding-top:50px" action="{{url_for('new_projects', id=id)}}" method="post" enctype="multipart/form-data">
 
             <h3>Room</h3>
-            <h6>Create your first Room. You can add rooms to this project (or any other project you create) latter on.</h6>
-            &nbsp;
 
             <div class="form-group row">
 
@@ -125,11 +93,7 @@
                         <div class="input-group-prepend">
                             <label class="input-group-text" for="centres">Layers</label>
                         </div>
-                        {% if disabled %}
-                        <select name="layers" id="layers" multiple="multiple" required disabled>
-                        {% else %}
-                        <select name="layers" id="layers" multiple="multiple" required>
-                        {% endif %}
+                        <select name="layers" id="layers" multiple="multiple">
                             <option value="dr8-north">dr8-north</option>
                             <option value="dr8-south">dr8-south</option>
                             <option value="dr9-north">dr9-north</option>

@@ -35,9 +35,9 @@ def coordtopix(center, coord, size, scale):
     return RA_pix, DEC_pix
 
 
-def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle='page', veto=None, info=None, grid=[2,2], m=4,
-                  radius=4/3600, comparison=None, layer_list=None, title=None, tab=False, tab_title=None, main_text=None,
-                  buttons_text=None, RGlabels=None, output=None, userfile_path=None):
+def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle='page', veto=None, info=None, m=4,
+                  radius=4/3600, comparison=None, layer_list=None, tab=False, tab_title=None,
+                  RGlabels=None, output=None, userfile_path=None, Ncols=4, BoxSize=40):
 
     '''
 
@@ -113,22 +113,16 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     if comparison is not None: a, b = comparison[0], comparison[1]
 
     RA, DEC = coord[0], coord[1]
-
-    rows, cols = grid[0], grid[1]
-    N = rows*cols
     scale_unit='pixscale'
-
     scale=0.262
-
-    m = 4
-    S = 2
-    #p.outline_line_color = "red"
-
-    boxsize = 2*m*radius*3600
+    boxsize = BoxSize #2*m*radius*3600
+    radius = BoxSize/(2 * 3600)
     size = int(round(boxsize/scale))
-    print(boxsize, size)
+    figsize = int(128)
+    print('BoxSize', boxsize)
+    print('Size', size)
 
-    idx_list = idx#random.sample(list(idx), rows*cols)
+    idx_list = idx #random.sample(list(idx), rows*cols)
 
     if info is None:
         info = {'RA':RA, 'DEC':DEC}
@@ -148,27 +142,18 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
             RAidx = RA[idx]
             DECidx = DEC[idx]
 
-            ramin, ramax = RAidx-m*radius, RAidx+m*radius
-            decmin, decmax = DECidx-m*radius, DECidx+m*radius
+            ramin, ramax = RAidx-radius, RAidx+radius
+            decmin, decmax = DECidx-radius, DECidx+radius
             dra = (ramax - ramin)/40
             ddec = (decmax - decmin)/40
             mask = (RA > ramin + dra) & (RA < ramax - dra) & (DEC > decmin + ddec) & (DEC < decmax - ddec)
 
+            TOOLTIPS = []
 
-            if comparison is not None:
+            for key in info.keys():
+                TOOLTIPS.append((key, '@'+key))
 
-                TOOLTIPS = []
-                for i in ['RA', 'DEC', 'morph', 'r', 'g', 'z', 'refcat']:
-                    TOOLTIPS.append((i+'_b', '@'+i+'_b'))
-                    TOOLTIPS.append((i+'_a', '@'+i+'_a'))
-            else:
-
-                TOOLTIPS = []
-
-                for key in info.keys():
-                    TOOLTIPS.append((key, '@'+key))
-
-            p = figure(plot_width=size*S, plot_height=size*S, tooltips=TOOLTIPS, tools="tap, save, zoom_in, zoom_out, crosshair")
+            p = figure(plot_width=2*figsize, plot_height=2*figsize, tooltips=TOOLTIPS, tools="tap, save, zoom_in, zoom_out, crosshair")
             p.axis.visible = False
             #p.min_border = 0
 
@@ -189,32 +174,21 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
             colors = ['green', 'red', 'blue', 'cyan', 'yellow']
             circle_i = []
             for color, key, val in zip(colors, veto.keys(), veto.values()):
+                #print('=====================')
+                #print(key, len(val))
 
                 ravpix, decvpix = coordtopix(center=[RAidx, DECidx], coord=[RA[(mask) & (val)], DEC[(mask) & (val)]], size=size, scale=scale)
 
-                if comparison is not None:
+                data = {}
+                data['x'] = ravpix
+                data['y'] = decvpix
+                #print('x', len(ravpix))
+                for info_key, info_val in zip(info.keys(), info.values()):
+                    data[info_key] = np.array(info_val)[(mask) & (val)]
+                    #print(len(ravpix), len(decvpix), len(np.array(info_val)[(mask) & (val)]))
 
-                    sourceCirc = ColumnDataSource(data=dict(
-                        x=ravpix,
-                        y=decvpix,
-                        r_b=cat['RMAG_%s' %(b)][(mask) & (val)], r_a=cat['RMAG_%s' %(a)][(mask) & (val)],
-                        g_b=cat['GMAG_%s' %(b)][(mask) & (val)], g_a=cat['GMAG_%s' %(a)][(mask) & (val)],
-                        z_b=cat['ZMAG_%s' %(b)][(mask) & (val)], z_a=cat['ZMAG_%s' %(a)][(mask) & (val)],
-                        morph_b=cat['TYPE_%s' %(b)][(mask) & (val)], morph_a=cat['TYPE_%s' %(a)][(mask) & (val)],
-                        refcat_b=cat['REF_CAT_%s' %(b)][(mask) & (val)], refcat_a=cat['REF_CAT_%s' %(a)][(mask) & (val)],
-                        RA_b=cat['RA_%s' %(b)][(mask) & (val)], RA_a=cat['RA_%s' %(a)][(mask) & (val)],
-                        DEC_b=cat['DEC_%s' %(b)][(mask) & (val)], DEC_a=cat['DEC_%s' %(a)][(mask) & (val)]
-                        ))
 
-                else:
-
-                    data = {}
-                    data['x'] = ravpix
-                    data['y'] = decvpix
-                    for info_key, info_val in zip(info.keys(), info.values()):
-                        data[info_key] = info_val[(mask) & (val)]
-
-                    sourceCirc = ColumnDataSource(data=data)
+                sourceCirc = ColumnDataSource(data=data)
 
                 circle = p.circle('x', 'y', source=sourceCirc, size=15, fill_color=None, line_color=color, line_width=3)
                 circle_i.append(circle)
@@ -225,19 +199,22 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
             p.add_layout(lineh)
             p.add_layout(linew)
             p.background_fill_color = "black"
-            p.outline_line_width = 20
+            p.outline_line_width = 15
             p.outline_line_alpha = 0.7
-            print('==================')
-            print(current_RGval.iloc[idx], RGlabels[-1])
-            if current_RGval.iloc[idx] == RGlabels[-1]:
-                p.outline_line_color = "red"
-            else:
-                p.outline_line_color = "green"
+            #print('==================')
+            #print(current_RGval.iloc[idx], RGlabels[-1])
+
             p.xgrid.grid_line_color = None
             p.ygrid.grid_line_color = None
 
             if RGlabels is not None:
-                print(current_RGval.iloc[idx], RGlabels_id[current_RGval.iloc[idx]])
+
+                if current_RGval.iloc[idx] == RGlabels[-1]:
+                    p.outline_line_color = "red"
+                else:
+                    p.outline_line_color = "green"
+
+                #print(idx, current_RGval.iloc[idx])#, RGlabels_id[current_RGval.iloc[idx]])
                 rbt = RadioGroup(labels=RGlabels, active=RGlabels_id[current_RGval.iloc[idx]], sizing_mode='scale_height')
                 #default_size=20 width_policy='min', sizing_mode="scale_both"
                 rbt.on_click(partial(my_radio_handler, idx=idx, num=num))
@@ -251,9 +228,9 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
     def update_width(attr, old, new):
         for p in plots_i:
-            print(old, new)
-            p.width=size*new
-            p.height=size*new
+            #print(old, new)
+            p.width=figsize*new
+            p.height=figsize*new
 
     #button = Button()
     size_slider = Slider(start=1, end=5, value=2, step=1, title="Figure Size")
@@ -265,7 +242,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     callback = CustomJS(args={key:value for key,value in iterable+[('checkbox',checkbox)]}, code=checkbox_code)
     checkbox.js_on_click(callback)
 
-    radio = RadioGroup(labels=layer_list, active=2)
+    radio = RadioGroup(labels=layer_list, active=len(layer_list)-1)
     iterable2 = [elem for part in [[('_'.join(['line',str(figid),str(lineid)]),line) for lineid,line in enumerate(elem)] for figid,elem in enumerate(layers)] for elem in part]
     #
     N = len(layer_list)
@@ -283,7 +260,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     radio.js_on_change('active', callback2)
 
     # Put controls in a single element
-    grids = WidgetBox(gridplot(plots, ncols=cols, plot_width=256, plot_height=256, sizing_mode = 'stretch_both'), name="grids")
+    grids = WidgetBox(gridplot(plots, ncols=Ncols, plot_width=256, plot_height=256, sizing_mode = 'stretch_both'), name="grids")
     #grids = gridplot(plots, ncols=5)
 
     # def update_cols(attr, old, new):
@@ -297,9 +274,6 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 
     #controls = column(radio, checkbox)
 
-    if title is None: title = '--'
-    if main_text is None: main_text = '...'
-    if buttons_text is None: buttons_text = '...'
 
     #layout = column(Div(text='<h1>%s</h1>' %(title)), Div(text='<h3>%s</h3>' %(main_text)), row(column(Div(text='<h3>%s</h3>' %(buttons_text)), controls), grid))
     #show(layout)
@@ -313,93 +287,63 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
 #get vars
 args = curdoc().session_context.request.arguments
 
-print(args)
+try:
+    userfile_path = args.get('userfile_path')[0].decode("utf-8")  #pass this as a string
+    if userfile_path == 'None':
+        userfile_path = None
+    print('userfile_path', userfile_path, type(userfile_path))
+except:
+    raise ValueError('no userfile_path')
 
 try:
-    catpath = args.get('catpath')[0]  #pass this as a string
+    reqPath = args.get('reqPath')[0].decode("utf-8")  #pass this as a string
+    print('reqPath', reqPath, type(reqPath))
 except:
-    cathpath = os.path.abspath(os.getcwd())+'/projects/_files/VITestFile.npy'
+    raise ValueError('no reqPath')
 
 try:
-    userfile_path = args.get('userfile_path')[0].decode("utf-8") #pass this as a string
+    batchID = int(args.get('batchID')[0].decode("utf-8"))  #pass this as a string
+    print('batchID', batchID, type(batchID))
 except:
-    userfile_path = None
+    raise ValueError('no batchID')
 
-try:
-    idx = args.get('idx')[0].decode("utf-8") #pass this as a list
-    idx = [int(i) for i in idx[1:-1].split()]
-except:
-    idx = None
+req = np.load(reqPath, allow_pickle=True).item()
+data = np.load(req.get('catpath'))
 
-try:
-    labels = args.get('labels')[0] #pass labels as a dict
-except:
-    labels = {'BGS':'bgs', 'No BGS':'not_bgs'}
+if req.get('labels') is not None:
+    veto = {key:data[val] for key, val in zip(req.get('labels').keys(), req.get('labels').values())}
+else:
+    veto = None
 
-try:
-    coord_names = args.get('coord_names')[0] #pass this as a list
-except:
-    coord_names = ['RA', 'DEC']
+if req.get('info_list') is not None:
+    info = {key:data[val] for key, val in zip(req.get('info_list').keys(), req.get('info_list').values())}
+else:
+    info = None
 
-try:
-    info_list = args.get('info_list')[0] #pass info as a list
-except:
-    info_list = ['RMAG', 'GMAG', 'ZMAG', 'TYPE']
-
-try:
-    layer_list = args.get('layer_list')[0] #pass this as a list
-except:
-    dr, survey = 'dr8', 'south'
-    layer_list = ['%s-%s-resid' %(dr, survey), '%s-%s-model' %(dr, survey), '%s-%s' %(dr, survey), ]
-
-# try:
-#     centre = args.get('centre')[0] #pass this as a string
-# except:
-#     centre = 'centre'
-
-try:
-    RGlabels = args.get('RGlabels')[0] #pass this as a list
-except:
-    RGlabels = ["STAR", "GAL", "CONT", "OTHR"]
-
-data = np.load(cathpath)
-
-print('========= idx ===========')
-print(idx, type(idx))
-
-# veto = {}
-# for key, val in zip(labels.keys(), labels.values()):
-#     veto[key] = data[val]
-veto = {key:data[val] for key, val in zip(labels.keys(), labels.values())}
-info = {key:data[key] for key in info_list}
-info_list = info_list + coord_names
-coord = [data[i] for i in coord_names]
-if idx is None:
-    idx = list(np.where(data['centre']))[0]
+coord = [data[i] for i in req.get('coord_names')]
+idx = req.get('%s_%s' %(req.get('room'), str(batchID)))
 unclassified_label = ['UNCL']
-RGlabels = RGlabels + unclassified_label
-title = None
-main_text = None
-buttons_text = None
-grid = [8,5]
+
+if req.get('RGlabels') is not None:
+    RGlabels = req.get('RGlabels') + unclassified_label
+else:
+    RGlabels = None
+
+layer_list = req.get('layer_list')
+Ncols = req.get('Ncols')
+BoxSize = req.get('BoxSize')
+
+for i in [req, data, veto, info, coord, idx, unclassified_label, RGlabels, layer_list, Ncols]:
+    print(i, type(i))
+
+#grid = [8,5]
 savefile = None
 
-print(cathpath)
-print(data.dtype.names)
-print(veto.keys())
-print(info_list)
-print(coord_names)
-print(idx)
-print(RGlabels)
-
-print('userfile_path: \t %s' %(userfile_path))
 
 #get scripts
-layout = html_postages(coord=coord, idx=idx, veto=veto, info=info, grid=grid, layer_list=layer_list, title=title,
-                  main_text=main_text, buttons_text=buttons_text, savefile=savefile, notebook=False,
-                        RGlabels=RGlabels, output=None, userfile_path=userfile_path)
+layout = html_postages(coord=coord, idx=idx, veto=veto, info=info, layer_list=layer_list,
+                       savefile=savefile, notebook=False,
+                        RGlabels=RGlabels, output=None, userfile_path=userfile_path, Ncols=Ncols, BoxSize=BoxSize)
 
 curdoc().add_root(layout)
-#curdoc().add_root(controls)
-#curdoc().template_variables["grids"] = grid
-#show(layout)
+
