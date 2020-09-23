@@ -4,10 +4,17 @@
 
 <div>
   <div class="container marketing" style="padding-top:50px" >
-    <h1>Gallery Room</h1>
-    <h4>Description of gallery</h4>
+    <h1>Gallery room <b>{{req.get('room')}}</b></h1>
+    <h3>Project <b>{{req.get('project')}}</b></h3>
+    <h5>{{req.get('project_description')}}</h5>
 
     <div class="row">
+      {% if req.get('VI') %}
+      <a href="{{ url_for('user_active_rooms', user=user) }}"><button class="btn btn-secondary">My Open rooms</button></a>
+      {% else %}
+      <a href="{{ url_for('user_active_rooms', user=user) }}"><button class="btn btn-secondary" disabled>My Open rooms</button></a>
+      {% endif %}
+
       {{ bokeh_script|safe }}
     </div>
 
@@ -22,27 +29,27 @@
           </li>
         {% else %}
           <li class="page-item">
-            <a class="page-link" href="{{ url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=current_batch-1) }}">Previous</a>
+            <a class="page-link" href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=current_batch-1) }}">Previous</a>
           </li>
         {% endif %}
 
-        {% for batch in range(Nbatchs) %}
+        {% for batch in range(req.get('Nbatchs')) %}
           {% if batch == current_batch %}
             <li class="page-item active">
-              <a class="page-link" href="{{ url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=batch) }}">{{ batch + 1}}<span class="sr-only">(current)</span></a>
+              <a class="page-link" href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=batch) }}">{{ batch + 1}}<span class="sr-only">(current)</span></a>
             </li>
           {% else %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=batch) }}">{{ batch + 1}}</a></li>
+            <li class="page-item"><a class="page-link" href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=batch) }}">{{ batch + 1}}</a></li>
           {% endif %}
         {% endfor %}
 
-        {% if (current_batch + 1) == Nbatchs %}
+        {% if (current_batch + 1) == req.get('Nbatchs') %}
           <li class="page-item disabled">
             <a class="page-link" href="#">Next</a>
           </li>
         {% else %}
           <li class="page-item">
-            <a class="page-link" href="{{ url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=current_batch+1) }}">Next</a>
+            <a class="page-link" href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=current_batch+1) }}">Next</a>
           </li>
         {% endif %}
 

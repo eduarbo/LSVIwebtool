@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}New project setup{% endblock %}
+{% block title %}New Room{% endblock %}
 {% block content %}
 
     <div class="container marketing" style="padding-top:50px" >
@@ -19,8 +19,8 @@
 
                 <div class="col-md-4 mb-3">
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file" name="file" value="{{ request.files['file'] }}" required>
-                        <label class="custom-file-label" for="file">Choose file...</label>
+                        <input type="file" id="file" name="file" value="{{ request.files['file'] }}" required>
+                        <label for="file">Choose file...</label>
                     </div>
 
                 </div>

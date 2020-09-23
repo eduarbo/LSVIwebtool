@@ -80,6 +80,9 @@ def get_file_info(file_path, filename):
 @app.route('/new_project/', methods=['GET', 'POST'])
 def new_projects(id=None):
 
+    print('=========== id =========')
+    print(id)
+
     if id is not None:
         pjs = session_projects.query(VIprojects).filter_by(id=id).all()
         session_projects.close()
@@ -111,6 +114,12 @@ def new_projects(id=None):
                 print("Image saved")
 
                 file_info = get_file_info(file_path, filename)
+
+                # Handle errors while calling os.remove()
+                try:
+                    os.remove(file_path)
+                except:
+                    print("Error while deleting file ", file_path)
 
                 return render_template(template, request=request, disabled=False, file_info=file_info, id=id, project=project)
 
@@ -160,8 +169,13 @@ def new_projects(id=None):
 
             if len(idx) < int(request.form.get('VIrequest')):
                 flash('VI Requested larger than sample. Maximum is %i' %(len(idx)))
-                #raise ValueError('Samples are less than required.')
-                return render_template('new_project.html', disabled=True, file_info=file_info, id=id)
+
+                try:
+                    shutil.rmtree(room_path)
+                except OSError as e:
+                    print("Error: %s : %s" % (room_path, e.strerror))
+
+                return render_template(template, request=request, disabled=False, file_info=file_info, id=id, project=project)
 
             req['Ncols'] = int(request.form.get('Ncols')) #number of columns in gallery grid #incorporate to html
             req['VIrequest'] = int(request.form.get('VIrequest'))
@@ -214,6 +228,8 @@ def new_projects(id=None):
             else:
                 req['RGlabels'] = request.form.getlist('VIlabels')
                 VI = True
+
+            req['VI'] = VI
 
             #save dict in room directory
             np.save(os.path.join(room_path, 'requests'), req)
@@ -290,13 +306,13 @@ def viewer(ProjectName, RoomName, user, batchID):
 
         args['userfile_path'] = userfile_path
         bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req)
 
     else:
 
         args['userfile_path'] = None
         bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", Nbatchs=Nbatchs, current_batch=batchID, project=ProjectName, room=RoomName, user=user)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req)
 
 #/
 #
