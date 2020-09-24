@@ -120,7 +120,7 @@
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href='#' class="btn btn-warning btn-xs">Download</a>
+                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
                       <a href="/join/{{row.project}}/{{row.room}}/" class="btn btn-primary">Join!</a>
                     </td>
                   </tr>
@@ -195,8 +195,8 @@
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href='#' class="btn btn-warning btn-xs">Download</a>
-                      <a href="/join/{{row.project}}/{{row.room}}/" class="btn btn-primary">Take a look</a>
+                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="/{{row.project}}/{{row.room}}/guest/0"  class="btn btn-primary">See galleries</a>
                     </td>
                   </tr>
                   {% endfor %}

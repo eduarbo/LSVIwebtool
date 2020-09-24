@@ -4,11 +4,13 @@ import atexit
 import random
 import shutil
 import subprocess
+from zipfile import ZipFile
+
 import pandas as pd
 
 import numpy as np
 from bokeh.client import pull_session
-from flask import Flask, redirect, url_for, render_template, request, flash
+from flask import Flask, redirect, url_for, render_template, request, flash, send_file
 from bokeh.embed.server import server_document
 from werkzeug.utils import secure_filename
 
@@ -262,13 +264,55 @@ def new_projects(id=None):
 
 
 #galleries page
-@app.route('/<ProjectName>/<RoomName>/<user>/<int:batchID>')
+@app.route('/<ProjectName>/<RoomName>/<user>/<int:batchID>', methods=['GET', 'POST'])
 def viewer(ProjectName, RoomName, user, batchID):
+
+    pjs = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
+    session_projects.close()
+    print('======== pjs ========')
+    print(pjs.status)
+
+    if request.form.get('next') == 'continue':
+
+        #print('===== HERE ======')
+
+        batchID = find_batch_available(ProjectName, RoomName, user) #assign batchID based on availability
+        pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
+        userfile_path = '%s/%s_%s' %(pathdir, user, str(batchID))
+        userfile_path_csv = '%s.csv' %(userfile_path)
+        #print(batchID, userfile_path_csv)
+
+        if os.path.isfile(userfile_path_csv):
+            #print('========= enter ===========')
+            reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
+            req = np.load(reqPath, allow_pickle=True).item()
+
+            args = {}
+            args['batchID'] = batchID
+            args['reqPath'] = reqPath
+            args['userfile_path'] = userfile_path
+            flash('Hmmm, seems you have ran out of batchs in this room. You will be redirect to batch %i and continue where you left.' %(batchID+1))
+
+            bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
+            return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req, pjs=pjs)
+
+        else:
+            usr = session_tracker.query(tracker).filter_by(email=user).all()
+            session_tracker.close()
+            #add entry to database
+            newentry = tracker(project=ProjectName, room=RoomName, batch=batchID,
+                             name=usr[0].name, afilliation=usr[0].afilliation, email=usr[0].email, progress=int(0), status='open')
+            session_tracker.add(newentry)
+            session_tracker.commit()
+            session_tracker.close()
+
+            return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
+
 
     reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
     req = np.load(reqPath, allow_pickle=True).item()
     userfile_path = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, '%s_%s' %(user, str(batchID)))
-    userfile_path_csv = '%s.cvs' %(userfile_path)
+    userfile_path_csv = '%s.csv' %(userfile_path)
 
     idx = req.get('%s_%s' %(RoomName, str(batchID)))
     Nbatchs = req['Nbatchs']
@@ -277,8 +321,9 @@ def viewer(ProjectName, RoomName, user, batchID):
     args['batchID'] = batchID
     args['reqPath'] = reqPath
 
+    if (req.get('RGlabels') is not None) & (pjs.status == 'open'):
 
-    if req.get('RGlabels') is not None:
+        print('===== inside ====')
 
         if not os.path.isfile(userfile_path_csv) :
 
@@ -289,7 +334,7 @@ def viewer(ProjectName, RoomName, user, batchID):
 
             #get centres from batchID
             selections.iloc[idx] = unclassified_label[0]
-            selections.to_csv('%s.cvs' %(userfile_path), index=False)
+            selections.to_csv('%s.csv' %(userfile_path), index=False)
 
             #If user not in database, create entry for that user
             try:
@@ -306,21 +351,45 @@ def viewer(ProjectName, RoomName, user, batchID):
 
         args['userfile_path'] = userfile_path
         bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req, pjs=pjs)
 
     else:
 
         args['userfile_path'] = None
         bokeh_script = server_document(url='http://localhost:5006/script', arguments=args)
-        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req)
+        return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req, pjs=pjs)
 
 #/
 #
+# @app.route('/next_available/<project>/<room>/<user>', methods=['GET', 'POST'])
+# def next_available(project, room, user):
+#
+#             #Export user details of project and room and batchID to database
+#             batchID = find_batch_available(project, room, user) #assign batchID based on availability
+#             pathdir = os.path.join(os.getcwd(), 'projects', project, room)
+#             userfile_path = '%s%s_%s' %(pathdir, user, str(batchID))
+#             userfile_path_csv = '%s.csv' %(userfile_path)
+#
+#             if os.path.isfile(userfile_path_csv):
+#                 flash('Hmmm, seems you have ran out of batchs in this room. You will be redirect to batch %i and continue where you left.' %(batchID))
+#                 return redirect(url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=batchID))
+#             else:
+#                 usr = session_tracker.query(tracker).filter_by(email=user).all()
+#                 session_tracker.close()
+#                 #add entry to database
+#                 newentry = tracker(project=project, room=room, batch=batchID,
+#                                  name=usr[0].name, afilliation=usr[0].afilliation, email=usr[0].email, progress=int(0), status='open')
+#                 session_tracker.add(newentry)
+#                 session_tracker.commit()
+#                 session_tracker.close()
+#
+#                 return redirect(url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=batchID))
+
+
 @app.route('/join/<ProjectName>/<RoomName>/', methods=['GET', 'POST'])
 def join(ProjectName, RoomName):
 
     if request.method == 'POST':
-        print('IS HERE!!!!!!!!!!!!')
         if request.form.get('make_gall') == 'continue':
 
             req = request.form
@@ -332,8 +401,9 @@ def join(ProjectName, RoomName):
             #Export user details of project and room and batchID to database
             batchID = find_batch_available(ProjectName, RoomName, user) #assign batchID based on availability
             pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-            userfile_path = '%s%s_%s' %(pathdir, user, str(batchID))
-            userfile_path_csv = '%s.cvs' %(userfile_path)
+            userfile_path = '%s/%s_%s' %(pathdir, user, str(batchID))
+            #print(userfile_path)
+            userfile_path_csv = '%s.csv' %(userfile_path)
 
             if os.path.isfile(userfile_path_csv):
                 print('Hmmm, seems you have ran out of batchs in this room. You will be redirect to batch %i and continue where you left.' %(batchID))
@@ -383,6 +453,8 @@ def user_active_rooms(user):
     rooms = session_tracker.query(tracker).filter_by(email=user).all()
     #username = user+'_'+rooms[0].afilliation
 
+    print(user, rooms)
+
     if len(rooms) > 0:
         for room in rooms:
             progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
@@ -390,11 +462,15 @@ def user_active_rooms(user):
             room.progress = progress
         session_tracker.close()
         name = rooms[0].name
+        print('======1=========')
+        print(name)
 
     pjs = session_projects.query(VIprojects).filter_by(email=user).all()
     session_projects.close()
     if len(pjs) > 0:
         name = pjs[0].name
+        print('======2=========')
+        print(name)
 
     myprojects_open = session_projects.query(VIprojects).filter_by(email=user, status='open', VI=True).all()
     myprojects_closed = session_projects.query(VIprojects).filter_by(email=user, status='closed', VI=True).all()
@@ -478,6 +554,66 @@ def closed_open(id, action):
     flash('You have successfully %s Room %s' %(action, room))
     return redirect(url_for('user_active_rooms', user=email))
 
+@app.route('/download/<int:id>')
+def download_file(id):
+
+    pj = session_projects.query(VIprojects).filter_by(id=id).one()
+    session_projects.close()
+
+    room_path = os.path.join(os.getcwd(), 'projects', pj.project, pj.room)
+
+    #merge results with targets file
+    #
+    room = pj.room
+    project = pj.project
+    author_name = pj.name
+    author_afill = pj.afilliation
+
+    reqPath = os.path.join(room_path, 'requests.npy')
+    req = np.load(reqPath, allow_pickle=True).item()
+
+    resdict = {}
+    files = glob.glob("%s/*.csv" %(room_path))
+
+    #
+    idxs = []
+    for i in range(req.get('Nbatchs')):
+        idxs += list(req.get('%s_%i' %(room, i)))
+
+    for file in files:
+
+        resdict[os.path.basename(file[:-4])] = np.array(pd.read_csv(file))
+
+    rescat = np.hstack(list(resdict.values()))
+    outfile = np.full(len(np.load(os.path.join(room_path, 'file.npy'))), np.nan, dtype=object)
+
+    for i in idxs:
+        element = np.delete(rescat[i], np.where(rescat[i] == "b'NA'"))
+        outfile[i] = [i for i in element]
+
+    #fmt='%.18e', delimiter=' ', newline='n', header='', footer='', comments='# ', encoding=None
+    VIresults_file = '%s/VIresults_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
+    VIindexes_file = '%s/VIindexes_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
+    result_file = '%s/results_%s_%s_from_%s_at_%s.zip' %(room_path, project, room, author_name, author_afill)
+
+    #remove existing files
+    for file in [VIresults_file, VIindexes_file, result_file]:
+        try:
+            os.remove(file)
+        except:
+            print("no file %s in %s " %(file, room_path))
+
+
+    np.savetxt(VIresults_file, list(outfile), fmt="%s")
+    np.savetxt(VIindexes_file, idxs, fmt='%i')
+
+    with ZipFile(result_file, mode='w') as zf:
+        for f in [VIresults_file, VIindexes_file]:
+            zf.write(f)
+
+    return send_file(result_file, as_attachment=True)
+
+
 # @app.route('/uploader', methods = ['GET', 'POST'])
 # def upload_file():
 #     print('====== outside =============')
@@ -492,6 +628,8 @@ def closed_open(id, action):
 #==============================
 #Some defs
 #==============================
+
+
 
 def allowed_file(filename):
 
@@ -520,7 +658,7 @@ def find_batch_available(ProjectName, RoomName, user):
     Nbatchs = req.get('Nbatchs')
 
     pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-    files = glob.glob("%s/*.cvs" %(pathdir))
+    files = glob.glob("%s/*.csv" %(pathdir))
 
     batchs_in_use = []
     for file in files:
@@ -534,7 +672,7 @@ def find_batch_available(ProjectName, RoomName, user):
             break
 
     if batchID is None:
-        files = glob.glob("%s/%s*.cvs" %(pathdir, user))
+        files = glob.glob("%s/%s*.csv" %(pathdir, user))
         batchs_in_use = []
         for file in files:
             batchs_in_use.append(int(file.split('_')[-1].split('.')[0]))
@@ -555,7 +693,7 @@ def find_batch_available(ProjectName, RoomName, user):
 def get_user_progress(ProjectName, RoomName, user, batchID):
 
     pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-    file = "%s/%s_%i.cvs" %(pathdir, user, batchID)
+    file = "%s/%s_%i.csv" %(pathdir, user, batchID)
 
     reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
     req = np.load(reqPath, allow_pickle=True).item()
@@ -573,7 +711,7 @@ def get_user_progress(ProjectName, RoomName, user, batchID):
 def get_room_progress(ProjectName, RoomName, VIreq):
 
     pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-    files = glob.glob("%s/*.cvs" %(pathdir))
+    files = glob.glob("%s/*.csv" %(pathdir))
 
     progress = 0
 

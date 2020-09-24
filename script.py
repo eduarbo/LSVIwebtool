@@ -91,7 +91,7 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
     plots_i = []
 
     if userfile_path is not None:
-        userfile = pd.read_csv(userfile_path + '.cvs')
+        userfile = pd.read_csv(userfile_path + '.csv')
         current_RGval = userfile['data']
 
     if RGlabels is not None:
@@ -105,10 +105,10 @@ def html_postages(coord=None, idx=None, notebook=True, savefile=None, htmltitle=
         else: p.outline_line_color = "green"
 
         if userfile_path is not None:
-            userfile = pd.read_csv(userfile_path + '.cvs')
+            userfile = pd.read_csv(userfile_path + '.csv')
             print(userfile_path)
             userfile.iloc[idx] = str(RGlabels[event])
-            userfile.to_csv(userfile_path+'.cvs', index=False)
+            userfile.to_csv(userfile_path+'.csv', index=False)
 
     if comparison is not None: a, b = comparison[0], comparison[1]
 
@@ -324,7 +324,10 @@ coord = [data[i] for i in req.get('coord_names')]
 idx = req.get('%s_%s' %(req.get('room'), str(batchID)))
 unclassified_label = ['UNCL']
 
-if req.get('RGlabels') is not None:
+#print('======================')
+#print(req.get('RGlabels'), userfile_path, (req.get('RGlabels') is not None) & (userfile_path is not None))
+
+if (req.get('RGlabels') is not None) & (userfile_path is not None):
     RGlabels = req.get('RGlabels') + unclassified_label
 else:
     RGlabels = None
