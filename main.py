@@ -591,17 +591,20 @@ def download_file(id):
         element = np.delete(rescat[i], np.where(rescat[i] == "b'NA'"))
         outfile[i] = [i for i in element]
 
+    #create results dir
+    os.makedirs(os.path.join(room_path, 'results'), exist_ok=True)
+
     #fmt='%.18e', delimiter=' ', newline='n', header='', footer='', comments='# ', encoding=None
-    VIresults_file = '%s/VIresults_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
-    VIindexes_file = '%s/VIindexes_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
-    result_file = '%s/results_%s_%s_from_%s_at_%s.zip' %(room_path, project, room, author_name, author_afill)
+    VIresults_file = '%s/results/VIresults_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
+    VIindexes_file = '%s/results/VIindexes_%s_%s_from_%s_at_%s.csv' %(room_path, project, room, author_name, author_afill)
+    result_file = '%s/results/results_%s_%s_from_%s_at_%s.zip' %(room_path, project, room, author_name, author_afill)
 
     #remove existing files
     for file in [VIresults_file, VIindexes_file, result_file]:
         try:
             os.remove(file)
         except:
-            print("no file %s in %s " %(file, room_path))
+            print("no file %s in %s " %(file, os.path.join(room_path, 'results')))
 
 
     np.savetxt(VIresults_file, list(outfile), fmt="%s")
