@@ -57,7 +57,7 @@
                               <td>{{row.progress}}</td>
                               <td>{{row.status}}</td>
                               <td>
-                                  <a href='#' class="btn btn-warning btn-xs">Download</a>
+                                  <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
                                   <a href="{{url_for('delete', ProjectName=row.project, RoomName=row.room, email=row.email)}}"
                                      class="btn btn-danger btn-xs"
                                      onclick="return confirm('Are You Sure To Delete {{ row.room }} from project {{ row.project }}?')">Delete</a>
@@ -203,7 +203,7 @@
                                   <td>{{row.progress}}</td>
                                   <td>{{row.status}}</td>
                                   <td>
-                                      <a href='#' class="btn btn-warning btn-xs">Download</a>
+                                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
                                       <a href="{{url_for('delete', ProjectName=row.project, RoomName=row.room, email=row.email)}}" class="btn btn-danger btn-xs" onclick="return confirm('Are You Sure To Delete {{ row.room }} from project {{ row.project }}?')">Delete</a>
                                       <a href="{{url_for('closed_open', id=row.id, action='open')}}" class="btn btn-secondary" >Open</a>
                                   </td>

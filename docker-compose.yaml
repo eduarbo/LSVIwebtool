@@ -17,6 +17,7 @@ services:
       dockerfile: flaskapp.Dockerfile
     volumes:
       - './:/app'
+    command: gunicorn --bind 0.0.0.0:5000 main:app
     ports:
       - '5000:5000'
 

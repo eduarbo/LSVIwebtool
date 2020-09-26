@@ -451,6 +451,7 @@ def resume():
 def user_active_rooms(user):
 
     rooms = session_tracker.query(tracker).filter_by(email=user).all()
+    session_tracker.close()
     #username = user+'_'+rooms[0].afilliation
 
     print(user, rooms)
@@ -460,7 +461,7 @@ def user_active_rooms(user):
             progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
                                        user=user, batchID=room.batch)
             room.progress = progress
-        session_tracker.close()
+
         name = rooms[0].name
         print('======1=========')
         print(name)
@@ -528,6 +529,8 @@ def delete(ProjectName, RoomName, email):
         return redirect(url_for('user_active_rooms', user=email))
     else:
         return redirect(url_for('home'))
+
+    session_projects.close()
 
 @app.route('/<action>/<int:id>', methods=['GET', 'POST'])
 def closed_open(id, action):
