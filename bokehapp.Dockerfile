@@ -30,7 +30,7 @@ RUN pip install --trusted-host pypi.python.org -r bokehapp_requirements.txt
 
 EXPOSE 5006
 #ENTRYPOINT ["bokeh","serve", "--port 5006", ""--allow-websocket-origin=*", "/app/script.py"]
-CMD bokeh serve --port 5006 --allow-websocket-origin="*" /app/script.py
+#CMD bokeh serve --port 5006 --allow-websocket-origin="*" /app/script.py
 
 
 

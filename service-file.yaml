@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: lsvi
+  name: lsvi
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+  selector:
+    name: lsvi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bokehapp
+spec:
+  ports:
+  - protocol: TCP
+    port: 5006
+    targetPort: 5006
+
+

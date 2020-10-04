@@ -263,14 +263,54 @@ def new_projects(id=None):
         return render_template(template, disabled=True, file_info=file_info, id=id, project=project)
 
 
+@app.route('/test_viewer')
+def test_viewer():
+
+    ProjectName = 'BGS'
+    RoomName = 'bright'
+    user = 'omar@ruiz'
+    batchID = 0
+    pjs = None
+
+    reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
+    req = np.load(reqPath, allow_pickle=True).item()
+    userfile_path = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, '%s_%s' %(user, str(batchID)))
+    #userfile_path_csv = '%s.csv' %(userfile_path)
+
+    #idx = req.get('%s_%s' %(RoomName, str(batchID)))
+    #Nbatchs = req['Nbatchs']
+
+    #room_path = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
+    #req['catpath'] = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'file.npy')
+    #np.save(os.path.join(room_path, 'requests'), req)
+
+    args = {}
+    args['batchID'] = batchID
+    args['reqPath'] = reqPath
+
+
+    args['userfile_path'] = userfile_path
+    bokeh_script = server_document(url='http://0.0.0.0:5006/script', arguments=args)
+    print('------------ BS --------------')
+    print(bokeh_script)
+    #print(req.get('catpath'))
+    print('--------------------------')
+    return render_template('room.html', bokeh_script=bokeh_script, template="Flask", current_batch=batchID, user=user, req=req, pjs=pjs)
+
+
 #galleries page
 @app.route('/<ProjectName>/<RoomName>/<user>/<int:batchID>', methods=['GET', 'POST'])
 def viewer(ProjectName, RoomName, user, batchID):
 
-    pjs = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
-    session_projects.close()
-    print('======== pjs ========')
-    print(pjs.status)
+    try:
+
+        pjs = session_projects.query(VIprojects).filter_by(project=ProjectName, room=RoomName).one()
+        session_projects.close()
+        print('======== pjs ========')
+        print(pjs.status)
+    except:
+        pjs = None
+        print('No project %s found' %(ProjectName))
 
     if request.form.get('next') == 'continue':
 

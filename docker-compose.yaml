@@ -5,11 +5,14 @@ services:
     build:
       context: .
       dockerfile: bokehapp.Dockerfile
+    #command: bokeh serve --port 5006 --allow-websocket-origin=0.0.0.0 /app/script.py
+    #command: bokeh serve /app/script.py
     ports:
       - '5006:5006'
     volumes:
       - './:/app'
-    image: qmxp55/bokehapp:1.1
+    #image: qmxp55/bokehapp:1.1
+    image: gcr.io/lsvi-cutout-290921/bokehapp:v1
   flaskapp:
     depends_on:
       - bokehapp
@@ -21,4 +24,4 @@ services:
     command: gunicorn --bind 0.0.0.0:5000 main:app
     ports:
       - '5000:5000'
-    image: qmxp55/flaskapp:1.1
+    image: gcr.io/lsvi-cutout-290921/flaskapp:v1
