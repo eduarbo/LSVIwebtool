@@ -36,21 +36,13 @@ body {
 
 {% block scripts %}
 
-{{ plot_dict[0] | safe}}
+{{ plots_dict[0] | safe}}
 
 {% endblock %}
 
 {% block content %}
 
-{% if pj_room.vi %}
-<form style="padding-top:50px"
-      action="{{url_for('viewer', room_id=pj_room.id, entry_id=pj_entry.id, batchID=batchID)}}"
-      method="post" enctype="multipart/form-data">
-{% else %}
-<form style="padding-top:50px"
-        action="{{url_for('viewer', room_id=pj_room.id, entry_id=None, batchID=batchID)}}" method="post"
-        enctype="multipart/form-data">
-{% endif %}
+<form style="padding-top:50px" action="{{url_for('test_viewer')}}" method="post" enctype="multipart/form-data">
 
   {% with messages = get_flashed_messages() %}
   {% if messages %}
@@ -69,48 +61,48 @@ body {
   <div class="sidenav">
 
     <div>
-      {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
-      <a href="/current_rooms/{{pj_entry.email}}">
+      {% if (req.get('VI')) and ((pjs.status == 'open')) %}
+      <a href="/current_rooms/{{user}}">
         <button class="btn btn-success btn">My Open rooms</button>
       </a>
       {% else %}
-      <a href="/current_rooms/{{pj_entry.email}}">
+      <a href="/current_rooms/{{user}}">
         <button class="btn btn-success btn" disabled>My Open rooms</button>
       </a>
       {% endif %}
     </div>
 
-    {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+    <!--  <form action="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=current_batch) }}" method="post" enctype="multipart/form-data">-->
+    {% if (req.get('VI')) and ((pjs.status == 'open')) %}
     &nbsp;
-    <a href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=999) }}">
-      <button class="btn btn-primary btn">
-      Next empty batch</button></a>
+    <button name="next" value="continue" class="btn btn-primary btn">Next empty batch</button>
     {% else %}
     &nbsp;
     <a>
       <button name="next" value="continue" class="btn btn-primary btn" disabled>Next empty batch</button>
     </a>
     {% endif %}
+    <!--  </form>-->
 
     &nbsp;
     &nbsp;
 
     <div align="center">
       <h5>Targets</h5>
-      <div>{{plot_dict[1]['checkbox'] | safe}}</div>
+      <div>{{plots_dict[1]['checkbox'] | safe}}</div>
     </div>
 
     &nbsp;
 
     <div align="center">
       <h5>Layers</h5>
-      <div>{{plot_dict[1]['radio'] | safe}}</div>
+      <div>{{plots_dict[1]['radio'] | safe}}</div>
     </div>
     &nbsp;
     &nbsp;
     <!--  <form action="{{ url_for('test_viewer') }}">-->
     <div class="form-group" align="center">
-      {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+      {% if (req.get('VI')) %}
       <a>
         <button name="save" value="continue" class="btn btn-primary btn"><h2>Save</h2></button>
       </a>
@@ -127,25 +119,25 @@ body {
   <div>
     <div class="container marketing" style="padding-top:50px" method="post">
 
-      <h1>Gallery room <b>{{pj_room.room}}</b></h1>
-      <h3>Project <b>{{pj_room.project}}</b></h3>
-      <h5>{{pj_room.project_description}}</h5>
+      <h1>Gallery room <b>{{req.get('room')}}</b></h1>
+      <h3>Project <b>{{req.get('project')}}</b></h3>
+      <h5>{{req.get('project_description')}}</h5>
 
       &nbsp;
-      <h5>Total cutout images in batch: <b>{{ pj_room.batchs_idx[batchID]|length }}</b></h5>
-      <h5>Box size (arcsec): <b>{{ pj_room.boxsize }}</b></h5>
+      <h5>Total cutout images in batch: <b>{{ req.get('%s_%s' %(req.get('room'), current_batch))|length }}</b></h5>
+      <h5>Box size (arcsec): <b>{{ req.get('BoxSize') }}</b></h5>
 
       <div class="form-group row">
-        {% for key in plot_dict[1].keys() %}
+        {% for key in plots_dict[1].keys() %}
         <!--        <h4>{{ key }}</h4>-->
         {% if key not in ['checkbox', 'radio'] %}
-          <div>{{ plot_dict[1][key] | safe }}</div>
+          <div>{{ plots_dict[1][key] | safe }}</div>
 
           <div class="cols">
-            {% if pj_room.vi %}
-            {% for label in pj_room.vi_labels %}
+            {% if req.get('VI') %}
+            {% for label in req.get('RGlabels') %}
             <div class="form-check">
-              {% if label == pj_entry.vi_query[key|int] %}
+              {% if label == req.get('vi_query')[key|int] %}
               <input class="form-check-input" type="radio" name={{ "class"+"."+key }} id={{ label }} value={{ label }} checked>
               {% else %}
               <input class="form-check-input" type="radio" name={{ "class" + "." + key }} id={{ label }} value={{ label }}>
@@ -167,65 +159,39 @@ body {
 
       <nav aria-label="...">
         <ul class="pagination justify-content-center">
-          {% if (batchID + 1) == 1 %}
+          {% if (current_batch + 1) == 1 %}
           <li class="page-item disabled">
             <a class="page-link" href="#">Previous</a>
           </li>
           {% else %}
           <li class="page-item">
-
-            {% if pj_room.vi %}
             <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batchID-1) }}">Previous</a>
-            {% else %}
-            <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=None, afilliation=None, email=None, batchID=batchID-1) }}">Previous</a>
-            {% endif %}
-
+               href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=current_batch-1) }}">Previous</a>
           </li>
           {% endif %}
 
-          {% for batch in range(pj_room.nbatchs) %}
-          {% if batch == batchID %}
+          {% for batch in range(req.get('Nbatchs')) %}
+          {% if batch == current_batch %}
           <li class="page-item active">
-            {% if pj_room.vi %}
             <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batch) }}">{{
+               href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=batch) }}">{{
               batch + 1}}<span class="sr-only">(current)</span></a>
-            {% else %}
-            <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=None, afilliation=None, email=None, batchID=batch) }}">{{
-              batch + 1}}<span class="sr-only">(current)</span></a>
-            {% endif %}
           </li>
           {% else %}
-          <li class="page-item">
-            {% if pj_room.vi %}
-            <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batch) }}">{{
-              batch + 1}}</a>
-            {% else %}
-            <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=None, afilliation=None, email=None, batchID=batch) }}">{{
-              batch + 1}}</a>
-            {% endif %}
-          </li>
+          <li class="page-item"><a class="page-link"
+                                   href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=batch) }}">{{
+            batch + 1}}</a></li>
           {% endif %}
           {% endfor %}
 
-          {% if (batchID + 1) == pj_room.nbatchs %}
+          {% if (current_batch + 1) == req.get('Nbatchs') %}
           <li class="page-item disabled">
             <a class="page-link" href="#">Next</a>
           </li>
           {% else %}
           <li class="page-item">
-            {% if pj_room.vi %}
             <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batchID+1) }}">Previous</a>
-            {% else %}
-            <a class="page-link"
-               href="{{ url_for('create_entry', id=pj_room.id, name=None, afilliation=None, email=None, batchID=batchID+1) }}">Previous</a>
-            {% endif %}
+               href="{{ url_for('viewer', ProjectName=req.get('project'), RoomName=req.get('room'), user=user, batchID=current_batch+1) }}">Next</a>
           </li>
           {% endif %}
 

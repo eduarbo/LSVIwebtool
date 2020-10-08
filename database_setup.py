@@ -1,6 +1,6 @@
 
 # for creating the mapper code
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, PickleType
 
 # for configuration and class code
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,40 +9,50 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 
 # create declarative_base instance
-Base_tracker = declarative_base()
-Base_projects = declarative_base()
+Base = declarative_base()
 
-class tracker(Base_tracker):
-    __tablename__ = 'VItracker'
+class tracker(Base):
+    __tablename__ = 'VI-tracker'
 
+    #common
     id = Column(Integer, primary_key=True)
     project = Column(String(250), nullable=False)
-    room = Column(String(250), nullable=False)
-    batch = Column(Integer, nullable=False)
-    name = Column(String(250), nullable=False)
-    afilliation = Column(String(250), nullable=False)
-    email = Column(String(250), nullable=False)
-    progress = Column(Integer)
-    status = Column(String(250), nullable=False)
-
-class VIprojects(Base_projects):
-    __tablename__ = 'projects'
-
-    id = Column(Integer, primary_key=True)
-    project = Column(String(250), nullable=False)
-    project_description = Column(String(500), nullable=False)
     room = Column(String(250), nullable=False)
     name = Column(String(250), nullable=False)
     afilliation = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
-    VIreq = Column(Integer, nullable=False)
-    progress = Column(Integer)
+    progress = Column(Integer, nullable=False, default=0)
     status = Column(String(250), nullable=False)
-    VI = Column(Boolean, default=True)
+    author = Column(Boolean, nullable=False)
+    vi_query = Column(PickleType, nullable=True)
+
+    #for joiners,
+    batch = Column(Integer, nullable=True)
+    room_id = Column(Integer, nullable=True)
+
+
+    #for authors
+    vi = Column(Boolean, default=True)
+    vi_req = Column(Integer, nullable=True)
+    project_description = Column(String, nullable=True)
+    ncols = Column(Integer, nullable=True)
+    batchsize = Column(Integer, nullable=True)
+    boxsize = Column(Integer, nullable=True)
+    nbatchs = Column(Integer, nullable=True)
+    ncentres = Column(Integer, nullable=True)
+    batchs_idx = Column(PickleType, nullable=True)
+    ndata = Column(Integer, nullable=True)
+    coord_names = Column(PickleType, nullable=True)
+    labels = Column(PickleType, nullable=True)
+    info_list = Column(PickleType, nullable=True)
+    layers = Column(PickleType, nullable=True)
+    centres = Column(String(250), nullable=True)
+    vi_labels = Column(PickleType, nullable=True)
+    plots = Column(PickleType, nullable=True)
+
+
 
 # creates a create_engine instance at the bottom of the file
-engine_tracker = create_engine('sqlite:///vi-tracker.db')
-engine_projects = create_engine('sqlite:///vi-projects.db')
+engine = create_engine('sqlite:///vi-tracker.db')
+Base.metadata.create_all(engine)
 
-Base_tracker.metadata.create_all(engine_tracker)
-Base_projects.metadata.create_all(engine_projects)
