@@ -73,7 +73,7 @@ def new_projects(id=None):
 
     if id is not None:
         try:
-            pjs = session.query(tracker).filter_by(id=id).one()
+            pjs = session.query(tracker).filter_by(id=id).first()
             session.close()
             project = pjs.project
             template = 'new_room.html'
@@ -140,7 +140,7 @@ def new_projects(id=None):
                 #room_path = os.path.join(os.getcwd(), 'projects', request.form.get('project'), request.form.get('room'))
                 #proj_path = os.path.join(os.getcwd(), 'projects', request.form.get('project'))
             else:
-                project_details = {'name':pjs[0].name, 'afilliation':pjs[0].afilliation, 'email':pjs[0].email, 'project':pjs[0].project, 'project_description':pjs[0].project_description}
+                project_details = {'name':pjs.name, 'afilliation':pjs.afilliation, 'email':pjs.email, 'project':pjs.project, 'project_description':pjs.project_description}
                 for key, value in zip(project_details.keys(), project_details.values()):
                     req[key] = value
 
@@ -253,8 +253,10 @@ def new_projects(id=None):
             req['plots'] = _plots
             # Get elements of batchs_idx
             idxs = [item for sublist in batchs_idx for item in sublist]
-            req['vi_query'] = {key:unclassified_label[0] for key in idxs}
+            print('======== idxs ========')
 
+            req['vi_query'] = {key:unclassified_label[0] for key in idxs}
+            print(len(idxs), len(req['vi_query'].keys()))
 
             #save dict in room directory
             #np.save(os.path.join(room_path, 'requests'), req, allow_pickle=True)
@@ -323,13 +325,13 @@ def create_entry(id, name, afilliation, email, batchID):
 
 
 @app.route('/viewer/<int:room_id>/<int:entry_id>/<int:batchID>', methods=['GET', 'POST'])
-def viewer(room_id, entry_id, batchID):
+def viewer(room_id, entry_id=None, batchID=None):
 
     pj_room = session.query(tracker).filter_by(id=room_id).first()
     if not pj_room:
         raise ValueError('No room with ID %i was found.' %(room_id))
 
-    if entry_id is None:
+    if entry_id == int(999):
         pj_entry = None
     else:
         pj_entry = session.query(tracker).filter_by(id=entry_id).one()
@@ -337,23 +339,37 @@ def viewer(room_id, entry_id, batchID):
         if not pj_entry:
             raise ValueError('No entry with ID %i was found.' %(entry_id))
 
-    if request.form.get('save') == 'continue':
+    if request.method == 'POST':
 
-        vi_query = {}
+        if request.form.get('dashboard') == 'continue':
 
-        for key in request.form:
-            if key.startswith('class.'):
-                id_ = key.partition('.')[-1]
-                value = request.form[key]
-                vi_query[int(id_)] = value
-                print('%s \t %s' %(id_, value))
+            return redirect(url_for('user_active_rooms',user=pj_entry.email))
 
-        try:
-            pj_entry.vi_query = vi_query
-            session.commit()
-            flash('Entries saved successfully')
-        except:
-            raise ValueError('Error occurred when trying to save VI entries.')
+        if request.form.get('next') == 'continue':
+
+            print('========== nex batch =========')
+
+            batchID = int(999)
+
+            return redirect(url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batchID))
+
+        if request.form.get('save') == 'continue':
+
+            vi_query = {}
+
+            for key in request.form:
+                if key.startswith('class.'):
+                    id_ = key.partition('.')[-1]
+                    value = request.form[key]
+                    vi_query[int(id_)] = value
+                    print('%s \t %s' %(id_, value))
+
+            try:
+                pj_entry.vi_query = vi_query
+                session.commit()
+                flash('Entries saved successfully')
+            except:
+                raise ValueError('Error occurred when trying to save VI entries.')
 
     # pj_room = session.query(tracker).filter_by(id=pj.room_id).one()
     # if not pj_room:
@@ -542,8 +558,17 @@ def test_viewer():
 #                 return redirect(url_for('viewer', ProjectName=project, RoomName=room, user=user, batchID=batchID))
 
 
-@app.route('/join/<ProjectName>/<RoomName>/', methods=['GET', 'POST'])
-def join(ProjectName, RoomName):
+@app.route('/join/<int:room_id>/', methods=['GET', 'POST'])
+def join(room_id):
+
+    pj_room = session.query(tracker).filter_by(id=room_id).first()
+
+    if not pj_room:
+        flash('Something went wrong. No room with ID %i was found.' %(room_id))
+        return redirect(url_for('home'))
+
+    #text = 'By %s from %s' %(author.name, author.afilliation)
+    session.close()
 
     if request.method == 'POST':
         if request.form.get('make_gall') == 'continue':
@@ -551,34 +576,11 @@ def join(ProjectName, RoomName):
             req = request.form
             name = req.get('name')
             email = req.get('email')
-            afill = req.get('afilliation')
-            user = email
+            afilliation = req.get('afilliation')
 
-            #Export user details of project and room and batchID to database
-            batchID = find_batch_available(ProjectName, RoomName, user) #assign batchID based on availability
-            pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-            userfile_path = '%s/%s_%s' %(pathdir, user, str(batchID))
-            #print(userfile_path)
-            userfile_path_csv = '%s.csv' %(userfile_path)
+            return redirect(url_for('create_entry', id=room_id, name=name, afilliation=afilliation, email=email, batchID=int(999)))
 
-            if os.path.isfile(userfile_path_csv):
-                print('Hmmm, seems you have ran out of batchs in this room. You will be redirect to batch %i and continue where you left.' %(batchID))
-                return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
-            else:
-                #add entry to database
-                newentry = tracker(project=ProjectName, room=RoomName, batch=batchID,
-                                 name=name, afilliation=afill, email=email, progress=int(0), status='open')
-                session.add(newentry)
-                session.commit()
-                session.close()
-
-                return redirect(url_for('viewer', ProjectName=ProjectName, RoomName=RoomName, user=user, batchID=batchID))
-    else:
-
-        author = session.query(tracker).filter_by(room=RoomName, project=ProjectName).one()
-        text = 'By %s from %s' %(author.name, author.afilliation)
-        session.close()
-        return render_template('join.html', button='Go to galleries', author=author, join=True)
+    return render_template('join.html', button='Go to galleries', pj_room=pj_room, join=True)
 
 @app.route('/resume', methods=['GET', 'POST'])
 def resume():
@@ -589,12 +591,12 @@ def resume():
             req = request.form
             email = req.get('email')
 
-            usr = session.query(tracker).filter_by(email=email).all()
-            session.close()
+            # usr = session.query(tracker).filter_by(email=email).all()
+            # session.close()
             pjs = session.query(tracker).filter_by(email=email).all()
             session.close()
 
-            if (len(usr) > 0) or (len(pjs) > 0):
+            if pjs:
                 return redirect(url_for('user_active_rooms', user=email))
             else:
                 text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
@@ -606,41 +608,31 @@ def resume():
 @app.route('/current_rooms/<user>')
 def user_active_rooms(user):
 
-    rooms = session.query(tracker).filter_by(email=user).all()
-    session.close()
-    #username = user+'_'+rooms[0].afilliation
+    pj_entry = session.query(tracker).filter_by(email=user, author=False).all()
+    pj_room = session.query(tracker).filter_by(email=user, author=True).all()
 
-    print(user, rooms)
+    if len(pj_entry) > 0:
+        for pj in pj_entry:
+            progress = get_user_progress(pj_entry=pj)
+            pj.progress = progress
 
-    if len(rooms) > 0:
-        for room in rooms:
-            progress = get_user_progress(ProjectName=room.project, RoomName=room.room,
-                                       user=user, batchID=room.batch)
-            room.progress = progress
+        name = pj_entry[0].name
 
-        name = rooms[0].name
-        print('======1=========')
-        print(name)
+    if pj_room:
+        name = pj_room[0].name
 
-    pjs = session.query(tracker).filter_by(email=user).all()
-    session.close()
-    if len(pjs) > 0:
-        name = pjs[0].name
-        print('======2=========')
-        print(name)
-
-    myprojects_open = session.query(tracker).filter_by(email=user, status='open', VI=True).all()
-    myprojects_closed = session.query(tracker).filter_by(email=user, status='closed', VI=True).all()
-    myprojects_nonVI = session.query(tracker).filter_by(email=user, VI=False).all()
+    myprojects_open = session.query(tracker).filter_by(email=user, status='open', vi=True, author=True).all()
+    myprojects_closed = session.query(tracker).filter_by(email=user, status='closed', vi=True, author=True).all()
+    myprojects_nonVI = session.query(tracker).filter_by(email=user, vi=False, author=True).all()
 
     for myprojects in [myprojects_open, myprojects_closed]:
         for pj in myprojects:
-            progress = get_room_progress(ProjectName=pj.project, RoomName=pj.room, VIreq=pj.VIreq)
+            progress = get_room_progress(pj_room=pj)
             pj.progress = progress
 
     session.close()
 
-    return render_template('user_active_rooms.html', rooms=rooms, myprojects_open=myprojects_open,
+    return render_template('user_active_rooms.html', rooms=pj_entry, myprojects_open=myprojects_open,
                            myprojects_closed=myprojects_closed, myprojects_nonVI=myprojects_nonVI,
                            name=name, user=user)
 
@@ -828,6 +820,7 @@ def get_filepath(request):
 def create_joiners_entry(id=None, name=None, afilliation=None, email=None, batchID=None):
 
     pj = session.query(tracker).filter_by(id=id).first()
+    print(pj)
 
     if pj:
 
@@ -873,7 +866,7 @@ def create_joiners_entry(id=None, name=None, afilliation=None, email=None, batch
 
         else:
             print('Room is non-VI. No entry saved.')
-            return id, None, batchID
+            return id, int(999), batchID
 
     else:
         raise ValueError('Project with ID %i does not exist.' % (id))
@@ -958,27 +951,23 @@ def get_room_progress(pj_room):
     pjs = session.query(tracker).filter_by(room_id=pj_room.id, author=False).all()
     N = 0
     for pj in pjs:
-        N += int(np.sum(pj.vi_query.values() != 'UNCL'))
+        N += int(np.sum(np.array(list(pj.vi_query.values())) != 'UNCL'))
 
     return np.round(100*N/pj_room.vi_req, 1)
 
-def get_user_progress(ProjectName, RoomName, user, batchID):
+def get_user_progress(pj_entry):
 
-    pathdir = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName)
-    file = "%s/%s_%i.csv" %(pathdir, user, batchID)
+    pj_room = session.query(tracker).filter_by(id=pj_entry.room_id, author=True).first()
+    tot = len(pj_room.batchs_idx[str(pj_entry.batch)])
+    current = int(np.sum(np.array(list(pj_entry.vi_query.values())) != 'UNCL'))
 
-    reqPath = os.path.join(os.getcwd(), 'projects', ProjectName, RoomName, 'requests.npy')
-    req = np.load(reqPath, allow_pickle=True).item()
-    batchs_idx = req.get('%s_%s' %(RoomName, str(batchID)))
-    tot = len(batchs_idx)
+    if tot == 0:
+        tot = 1
 
-    progress = 0
+    print('===== user prog ======')
+    print(tot, current, len(pj_entry.vi_query.keys()))
 
-    userfile = np.array(pd.read_csv(file)['data'], dtype=str)
-    mask = (userfile != "b'NA'") & (userfile != 'UNCL')
-    progress += int(np.sum(mask))
-
-    return np.round(100*progress/tot, 1)
+    return np.round(100*current/tot, 1)
 
 
 # function to return key for any value in a dict

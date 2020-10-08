@@ -99,7 +99,7 @@
                               <td>{{row.progress}}</td>
                               <td>{{row.status}}</td>
                               <td>
-                                  <a href="{{ url_for('viewer', ProjectName=row.project, RoomName=row.room, user=user, batchID=row.batch) }}"
+                                  <a href="{{ url_for('viewer', room_id=row.room_id, entry_id=row.id, batchID=row.batch ) }}"
                                      class="btn btn-primary" >Continue</a>
                               </td>
                           </tr>
@@ -151,7 +151,7 @@
                                   <a href="{{url_for('delete', ProjectName=row.project, RoomName=row.room, email=row.email)}}"
                                      class="btn btn-danger btn-xs"
                                      onclick="return confirm('Are You Sure To Delete {{ row.room }} from project {{ row.project }}?')">Delete</a>
-                                  <a href="{{ url_for('viewer', ProjectName=row.project, RoomName=row.room, user=user, batchID=0) }}"
+                                  <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0 ) }}"
                                      class="btn btn-primary" >See galleries</a>
                               </td>
                           </tr>

@@ -19,7 +19,7 @@
 
                 <div class="col-md-4 mb-3">
                     <div class="custom-file">
-                        <input type="file" id="file" name="file" value="{{ request.files['file'] }}" required>
+                        <input type="file" id="file" name="file" value="{{ request.files['file'] }}">
                         <label for="file">Choose file...</label>
                     </div>
 
@@ -299,7 +299,7 @@
 
 {% endblock %}
 
-{% block script %}
+{% block scripts %}
 
 <script>
 var slider1 = document.getElementById("VIrequest");

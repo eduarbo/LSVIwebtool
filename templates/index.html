@@ -121,7 +121,7 @@
                     <td>{{row.status}}</td>
                     <td>
                       <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
-                      <a href="/join/{{row.project}}/{{row.room}}/" class="btn btn-primary">Join!</a>
+                      <a href="/join/{{row.id}}/" class="btn btn-primary">Join!</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -155,7 +155,7 @@
                     <td>{{row.room}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>
-                      <a href="/{{row.project}}/{{row.room}}/guest/0" class="btn btn-primary">See galleries!</a>
+                      <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0 ) }}" class="btn btn-primary">See galleries!</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -196,7 +196,7 @@
                     <td>{{row.status}}</td>
                     <td>
                       <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
-                      <a href="/{{row.project}}/{{row.room}}/guest/0"  class="btn btn-primary">See galleries</a>
+                      <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0) }}"  class="btn btn-primary">See galleries</a>
                     </td>
                   </tr>
                   {% endfor %}
