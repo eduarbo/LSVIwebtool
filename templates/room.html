@@ -108,7 +108,7 @@ body {
     </div>
     &nbsp;
     &nbsp;
-    <!--  <form action="{{ url_for('test_viewer') }}">-->
+
     <div class="form-group" align="center">
       {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
       <a>
@@ -120,7 +120,6 @@ body {
       </a>
       {% endif %}
     </div>
-    <!--  </form>-->
 
   </div>
 
@@ -137,12 +136,11 @@ body {
 
       <div class="form-group row">
         {% for key in plot_dict[1].keys() %}
-        <!--        <h4>{{ key }}</h4>-->
         {% if key not in ['checkbox', 'radio'] %}
           <div>{{ plot_dict[1][key] | safe }}</div>
 
           <div class="cols">
-            {% if pj_room.vi %}
+            {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
             {% for label in pj_room.vi_labels %}
             <div class="form-check">
               {% if label == pj_entry.vi_query[key|int] %}

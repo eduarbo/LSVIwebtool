@@ -120,7 +120,7 @@
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="{{ url_for('download_file', room_id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
                       <a href="/join/{{row.id}}/" class="btn btn-primary">Join!</a>
                     </td>
                   </tr>
@@ -190,12 +190,12 @@
                     <td>{{row.id}}</td>
                     <td>{{row.project}}</td>
                     <td>{{row.room}}</td>
-                    <td>{{row.vi-req}}</td>
+                    <td>{{row.vi_req}}</td>
                     <td>{{row.progress}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="{{ url_for('download_file', room_id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
                       <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0) }}"  class="btn btn-primary">See galleries</a>
                     </td>
                   </tr>
