@@ -18,7 +18,7 @@ services:
       - bokehapp
     build:
       context: .
-      dockerfile: flaskapp.Dockerfile
+      dockerfile: Dockerfile
     volumes:
       - './:/app'
     command: gunicorn --bind 0.0.0.0:5000 main:app

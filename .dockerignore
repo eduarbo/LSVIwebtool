@@ -2,12 +2,14 @@
 .ipynb_checkpoints/*
 .empty/*
 /nb/*
+/lsvi-webtool/*
+/toremove/*
 /test/*
 .DS_Store
 .gitignore
 README.md
 env.*
-*.db
+#*.db
 
 # To prevent storing dev/temporary container data
 #*.csv
