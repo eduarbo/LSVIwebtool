@@ -1,27 +1,25 @@
+version: '3.7'
 
-version: '3'
 services:
-  bokehapp:
-    build:
-      context: .
-      dockerfile: bokehapp.Dockerfile
-    #command: bokeh serve --port 5006 --allow-websocket-origin=0.0.0.0 /app/script.py
-    #command: bokeh serve /app/script.py
-    ports:
-      - '5006:5006'
+  web:
+    build: ./web
+    command: python manage.py run -h 0.0.0.0
     volumes:
-      - './:/app'
-    #image: qmxp55/bokehapp:1.1
-    image: gcr.io/lsvi-cutout-290921/bokehapp:v1
-  flaskapp:
+      - ./web/:/usr/src/app/
+    ports:
+      - 5000:5000
+    env_file:
+      - ./.env.dev
     depends_on:
-      - bokehapp
-    build:
-      context: .
-      dockerfile: Dockerfile
+      - db
+  db:
+    image: postgres:12-alpine
     volumes:
-      - './:/app'
-    command: gunicorn --bind 0.0.0.0:5000 main:app
-    ports:
-      - '5000:5000'
-    image: gcr.io/lsvi-cutout-290921/flaskapp:v1
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=hello_flask
+      - POSTGRES_PASSWORD=hello_flask
+      - POSTGRES_DB=hello_flask_dev
+
+volumes:
+  postgres_data:

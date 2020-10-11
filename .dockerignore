@@ -5,6 +5,7 @@
 /lsvi-webtool/*
 /toremove/*
 /test/*
+#/data_tmp/*
 .DS_Store
 .gitignore
 README.md

@@ -7,30 +7,40 @@ import pandas as pd
 
 import numpy as np
 
-from flask import Flask, redirect, url_for, render_template, request, flash, send_file
+from flask import Flask, redirect, url_for, render_template, request, flash, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.config.from_object("project.config.Config")
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from database_setup import Base, tracker
+from project.database_setup import db, tracker
 
-from lscutout import html_postages
+#from flask_sqlalchemy import SQLAlchemy
+#from sqlalchemy import create_engine
+#from sqlalchemy.orm import sessionmaker
+#from web.project.database_setup2 import Base, tracker
+
+from project.lscutout import html_postages
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+session = db.session
 
 # Connect to Database and create database session
-engine = create_engine('sqlite:///vi-tracker.db')
+#db = SQLAlchemy(app)
+#engine = create_engine('sqlite:///vi-tracker.db')
 
-Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
+#Base.metadata.bind = engine
+#DBSession = sessionmaker(bind=engine)
+#session = DBSession()
 
-app.config["FILE_UPLOADS"] = os.path.join(os.getcwd(), 'data_tmp')
+#app.config["MEDIA_FOLDER] = os.path.join(os.getcwd(), 'project', 'data_tmp')
 app.config["ALLOWED_FILE_EXTENSIONS"] = ['NPY', 'FITS', 'CVS']
 app.config["MAX_FILE_FILESIZE"] = 0.2 * 1024 * 1024
+
+@app.route("/media/<path:filename>")
+def mediafiles(filename):
+    return send_from_directory(app.config["MEDIA_FOLDER"], filename)
 
 @app.route('/')
 @app.route('/home')
@@ -82,7 +92,7 @@ def new_projects(id=None):
             if allowed_file(file.filename):
 
                 filename = get_filepath(request=request)
-                file_path = os.path.join(app.config["FILE_UPLOADS"], filename)
+                file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
 
                 # If file exist, remove it
                 # Handle errors while calling os.remove()
@@ -108,7 +118,7 @@ def new_projects(id=None):
             #create input data dict based on request
             req = {}
             filename = get_filepath(request=request)
-            file_path = os.path.join(app.config["FILE_UPLOADS"], filename)
+            file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
             data = np.load(file_path)
 
             #create project directory root
@@ -265,7 +275,7 @@ def create_entry(id, name, afilliation, email, batchID):
 
     room_id, entry_id, batchID = create_joiners_entry(id=id, name=name, afilliation=afilliation, email=email, batchID=batchID)
 
-    return redirect(url_for('viewer', room_id=room_id, entry_id=entry_id, batchID=batchID))
+    return redirect(url_for('viewer', _external=True, room_id=room_id, entry_id=entry_id, batchID=batchID))
 
 
 @app.route('/viewer/<int:room_id>/<int:entry_id>/<int:batchID>', methods=['GET', 'POST'])
@@ -287,7 +297,7 @@ def viewer(room_id, entry_id=None, batchID=None):
 
         if request.form.get('dashboard') == 'continue':
 
-            return redirect(url_for('user_active_rooms',user=pj_entry.email))
+            return redirect(url_for('user_active_rooms', user=pj_entry.email))
 
         if request.form.get('next') == 'continue':
 
@@ -313,8 +323,8 @@ def viewer(room_id, entry_id=None, batchID=None):
 
     plot_dict = pj_room.plots[str(batchID)]
 
-    html = render_template('room.html', pj_room=pj_room, pj_entry=pj_entry, batchID=batchID, plot_dict=plot_dict)
-    return encode_utf8(html)
+    return render_template('room.html', pj_room=pj_room, pj_entry=pj_entry, batchID=batchID, plot_dict=plot_dict)
+    #return encode_utf8(html)
 
 @app.route('/join/<int:room_id>/', methods=['GET', 'POST'])
 def join(room_id):
@@ -352,7 +362,7 @@ def resume():
             session.close()
 
             if pjs:
-                return redirect(url_for('user_active_rooms', user=email))
+                return redirect(url_for('user_active_rooms', _external=True, user=email))
             else:
                 text = '%s does not have active rooms yet. Go to Projects to join an existing room.' %(email)
                 flash(text)
@@ -414,7 +424,7 @@ def delete(room_id, email):
     # Remove file
 
     filename = '%s_%s_%s.%s' % (pj_room.project, pj_room.room, pj_room.email, 'npy')
-    file_path = os.path.join(app.config["FILE_UPLOADS"], filename)
+    file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
 
     try:
         shutil.rmtree(file_path)
@@ -495,7 +505,7 @@ def download_file(room_id):
 
     session.close()
 
-    file_path = os.path.join(app.config["FILE_UPLOADS"], 'results_%s_%s_%i.csv' %(pj_room.project, pj_room.room, pj_room.id))
+    file_path = os.path.join(app.config["MEDIA_FOLDER"], 'results_%s_%s_%i.csv' %(pj_room.project, pj_room.room, pj_room.id))
 
     try:
         os.remove(file_path)
@@ -699,7 +709,7 @@ def get_key(my_dict, val):
     return "key doesn't exist"
 
 
-if __name__ == '__main__':
-    HOST = '0.0.0.0'
-    PORT = 5000
-    app.run(HOST, PORT, debug=True)
+# if __name__ == '__main__':
+#     HOST = '0.0.0.0'
+#     PORT = 5000
+#     app.run(HOST, PORT, debug=True)

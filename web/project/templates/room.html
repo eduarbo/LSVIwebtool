@@ -74,7 +74,7 @@ body {
         <button name="dashboard" value="continue" class="btn btn-success btn">My Open rooms</button>
       </a>
       {% else %}
-      <a href="/current_rooms/{{pj_entry.email}}">
+      <a href="{{ url_for('user_active_rooms', user=pj_entry.email) }}">
         <button class="btn btn-success btn" disabled>My Open rooms</button>
       </a>
       {% endif %}
