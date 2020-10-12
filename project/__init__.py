@@ -10,10 +10,16 @@ import numpy as np
 from flask import Flask, redirect, url_for, render_template, request, flash, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
-app = Flask(__name__)
-app.config.from_object("project.config.Config")
+from project.database_setup import db, init_app
+from project.model import tracker
+from project import commands
 
-from project.database_setup import db, tracker
+app = Flask(__name__)
+
+app.config.from_object("project.config.DevelopmentConfig")
+commands.init_app(app)
+init_app(app)
+
 
 #from flask_sqlalchemy import SQLAlchemy
 #from sqlalchemy import create_engine
@@ -23,7 +29,7 @@ from project.database_setup import db, tracker
 from project.lscutout import html_postages
 
 # Set the secret key to some random bytes. Keep this really secret!
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+#app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 session = db.session
 
 # Connect to Database and create database session
@@ -34,7 +40,7 @@ session = db.session
 #DBSession = sessionmaker(bind=engine)
 #session = DBSession()
 
-#app.config["MEDIA_FOLDER] = os.path.join(os.getcwd(), 'project', 'data_tmp')
+app.config["MEDIA_FOLDER"] = os.path.join(os.getcwd(), 'project', 'media')
 app.config["ALLOWED_FILE_EXTENSIONS"] = ['NPY', 'FITS', 'CVS']
 app.config["MAX_FILE_FILESIZE"] = 0.2 * 1024 * 1024
 
@@ -709,7 +715,8 @@ def get_key(my_dict, val):
     return "key doesn't exist"
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    app.run()
 #     HOST = '0.0.0.0'
 #     PORT = 5000
 #     app.run(HOST, PORT, debug=True)

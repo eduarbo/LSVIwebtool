@@ -1,9 +1,4 @@
-
-from flask_sqlalchemy import SQLAlchemy
-from project import app
-
-app.config.from_object("project.config.Config")
-db = SQLAlchemy(app)
+from project.database_setup import db
 
 class tracker(db.Model):
     __tablename__ = 'vitracker'
@@ -44,4 +39,5 @@ class tracker(db.Model):
     vi_labels = db.Column(db.PickleType, nullable=True)
     plots = db.Column(db.PickleType, nullable=True)
 
-
+    def __repr__(self):
+        return f"Model: {self.parameter}"
