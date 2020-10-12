@@ -17,7 +17,7 @@ from project import commands
 app = Flask(__name__)
 
 #app.config.from_object("project.config.DevelopmentConfig")
-app.config.from_object("project.config.ProductionConfigConfig")
+app.config.from_object(os.environ['APP_SETTINGS'])
 
 commands.init_app(app)
 init_app(app)
