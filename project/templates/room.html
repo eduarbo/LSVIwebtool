@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block css %}
+
+<style>
+body {
+  font-family: "Lato", sans-serif;
+}
+
+.sidenav {
+  width: 180px;
+  position: fixed;
+  z-index: 1;
+  top: 200px;
+  left: 50px;
+  background: #eee;
+  overflow-x: hidden;
+  padding: 10px 0;
+}
+
+.sidenav a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #2196F3;
+  display: block;
+}
+
+.sidenav a:hover {
+  color: #064579;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ plot_dict[0] | safe}}
+
+{% endblock %}
+
+{% block content %}
+
+{% if pj_room.vi %}
+<form style="padding-top:50px"
+      action="{{url_for('viewer', room_id=pj_room.id, entry_id=pj_entry.id, batchID=batchID)}}"
+      method="post" enctype="multipart/form-data">
+{% else %}
+<form style="padding-top:50px"
+        action=# method="post"
+        enctype="multipart/form-data">
+{% endif %}
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+
+  {% for message in messages %}
+  <div class="alert alert-success alert-dismissable" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="close">
+      <span aria-hidden="true">x</span>
+    </button>
+    {{message}}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <div class="sidenav">
+
+    <div>
+      {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+      <a>
+        <button name="dashboard" value="continue" class="btn btn-success btn">My Open rooms</button>
+      </a>
+      {% else %}
+      <a href="{{ url_for('user_active_rooms', user=pj_entry.email) }}">
+        <button class="btn btn-success btn" disabled>My Open rooms</button>
+      </a>
+      {% endif %}
+    </div>
+
+    {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+    &nbsp;
+    <a>
+      <button name="next" value="continue" class="btn btn-primary btn">
+      Next empty batch</button></a>
+    {% else %}
+    &nbsp;
+    <a href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=0) }}">
+      <button name="next" value="continue" class="btn btn-primary btn" disabled>Next empty batch</button>
+    </a>
+    {% endif %}
+
+    &nbsp;
+    &nbsp;
+
+    <div align="center">
+      <h5>Targets</h5>
+      <div>{{plot_dict[1]['checkbox'] | safe}}</div>
+    </div>
+
+    &nbsp;
+
+    <div align="center">
+      <h5>Layers</h5>
+      <div>{{plot_dict[1]['radio'] | safe}}</div>
+    </div>
+    &nbsp;
+    &nbsp;
+
+    <div class="form-group" align="center">
+      {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+      <a>
+        <button name="save" value="continue" class="btn btn-primary btn"><h2>Save</h2></button>
+      </a>
+      {% else %}
+      <a href="#">
+        <button name="save" value="continue" class="btn btn-primary btn" disabled><h2>Save</h2></button>
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div>
+    <div class="container marketing" style="padding-top:50px" method="post">
+
+      <h1>Gallery room <b>{{pj_room.room}}</b></h1>
+      <h3>Project <b>{{pj_room.project}}</b></h3>
+      <h5>{{pj_room.project_description}}</h5>
+
+      &nbsp;
+      <h5>Total cutout images in batch: <b>{{ pj_room.batchs_idx[batchID|string]|length }}</b></h5>
+      <h5>Box size (arcsec): <b>{{ pj_room.boxsize }}</b></h5>
+
+      <div class="form-group row">
+        {% for key in plot_dict[1].keys() %}
+        {% if key not in ['checkbox', 'radio'] %}
+          <div>{{ plot_dict[1][key] | safe }}</div>
+
+          <div class="cols">
+            {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
+            {% for label in pj_room.vi_labels %}
+            <div class="form-check">
+              {% if label == pj_entry.vi_query[key|int] %}
+              <input class="form-check-input" type="radio" name={{ "class"+"."+key }} id={{ label }} value={{ label }} checked>
+              {% else %}
+              <input class="form-check-input" type="radio" name={{ "class" + "." + key }} id={{ label }} value={{ label }}>
+              {% endif %}
+              <label class="form-check-label" for={{ label }}>
+                {{ label }}
+              </label>
+            </div>
+            {% endfor %}
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% endfor %}
+      </div>
+
+      &nbsp;
+      &nbsp;
+
+      <nav aria-label="...">
+        <ul class="pagination justify-content-center">
+          {% if (batchID + 1) == 1 %}
+          <li class="page-item disabled">
+            <a class="page-link" href="#">Previous</a>
+          </li>
+          {% else %}
+          <li class="page-item">
+
+            {% if pj_room.vi %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batchID-1) }}">Previous</a>
+            {% else %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name='none', afilliation='none', email='none', batchID=batchID-1) }}">Previous</a>
+            {% endif %}
+
+          </li>
+          {% endif %}
+
+          {% for batch in range(pj_room.nbatchs) %}
+          {% if batch == batchID %}
+          <li class="page-item active">
+            {% if pj_room.vi %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batch) }}">{{
+              batch + 1}}<span class="sr-only">(current)</span></a>
+            {% else %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name='none', afilliation='none', email='none', batchID=batch) }}">{{
+              batch + 1}}<span class="sr-only">(current)</span></a>
+            {% endif %}
+          </li>
+          {% else %}
+          <li class="page-item">
+            {% if pj_room.vi %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batch) }}">{{
+              batch + 1}}</a>
+            {% else %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name='none', afilliation='none', email='none', batchID=batch) }}">{{
+              batch + 1}}</a>
+            {% endif %}
+          </li>
+          {% endif %}
+          {% endfor %}
+
+          {% if (batchID + 1) == pj_room.nbatchs %}
+          <li class="page-item disabled">
+            <a class="page-link" href="#">Next</a>
+          </li>
+          {% else %}
+          <li class="page-item">
+            {% if pj_room.vi %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name=pj_entry.name, afilliation=pj_entry.afilliation, email=pj_entry.email, batchID=batchID+1) }}">Next</a>
+            {% else %}
+            <a class="page-link"
+               href="{{ url_for('create_entry', id=pj_room.id, name='none', afilliation='none', email='none', batchID=batchID+1) }}">Next</a>
+            {% endif %}
+          </li>
+          {% endif %}
+
+        </ul>
+      </nav>
+
+    </div>
+  </div>
+
+
+</form>
+
+
+{% endblock %}
+
+

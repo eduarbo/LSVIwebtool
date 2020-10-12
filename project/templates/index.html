@@ -62,13 +62,13 @@
             <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
             <h2>New Project</h2>
             <p>Text here...</p>
-            <p><a class="btn btn-secondary" href="/new_project" role="button">Create new project &raquo;</a></p>
+            <p><a class="btn btn-secondary" href="{{ url_for('new_projects') }}" role="button">Create new project &raquo;</a></p>
           </div><!-- /.col-lg-4 -->
           <div class="col-lg-4">
             <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
             <h2>Join</h2>
             <p>Text here...</p>
-            <p><a class="btn btn-secondary" href="#" role="button">Join existing project/room &raquo;</a></p>
+            <p><a class="btn btn-secondary" href="/test_viewer" role="button">Join existing project/room (TEST VIEWER V3.6!) &raquo;</a></p>
           </div><!-- /.col-lg-4 -->
           <div class="col-lg-4">
             <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
@@ -115,13 +115,13 @@
                     <td>{{row.id}}</td>
                     <td>{{row.project}}</td>
                     <td>{{row.room}}</td>
-                    <td>{{row.VIreq}}</td>
+                    <td>{{row.vi_req}}</td>
                     <td>{{row.progress}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
-                      <a href="/join/{{row.project}}/{{row.room}}/" class="btn btn-primary">Join!</a>
+                      <a href="{{ url_for('download_file', room_id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="/join/{{row.id}}/" class="btn btn-primary">Join!</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -155,7 +155,7 @@
                     <td>{{row.room}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>
-                      <a href="/{{row.project}}/{{row.room}}/guest/0" class="btn btn-primary">See galleries!</a>
+                      <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0 ) }}" class="btn btn-primary">See galleries!</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -190,13 +190,13 @@
                     <td>{{row.id}}</td>
                     <td>{{row.project}}</td>
                     <td>{{row.room}}</td>
-                    <td>{{row.VIreq}}</td>
+                    <td>{{row.vi_req}}</td>
                     <td>{{row.progress}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
                     <td>{{row.status}}</td>
                     <td>
-                      <a href="{{ url_for('.download_file', id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
-                      <a href="/{{row.project}}/{{row.room}}/guest/0"  class="btn btn-primary">See galleries</a>
+                      <a href="{{ url_for('download_file', room_id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="{{ url_for('viewer', room_id=row.id, entry_id=999, batchID=0) }}"  class="btn btn-primary">See galleries</a>
                     </td>
                   </tr>
                   {% endfor %}

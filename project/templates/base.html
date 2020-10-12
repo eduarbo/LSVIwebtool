@@ -35,6 +35,11 @@
       }
     </style>
 
+<!--    Bokeh -->
+    <link href="http://cdn.pydata.org/bokeh/release/bokeh-2.2.1.min.css" rel="stylesheet" type="text/css">
+    <link href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-2.2.1.min.css" rel="stylesheet" type="text/css">
+    <link href="http://cdn.pydata.org/bokeh/release/bokeh-tables-2.2.1.min.css" rel="stylesheet" type="text/css">
+
 
 </head>
 <body>
@@ -69,11 +74,11 @@
     <!-- FOOTER -->
     <footer class="container">
         <p class="float-right"><a href="#">Back to top</a></p>
-        <p>&copy; 2017-2018 Company, Inc. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+        <p>&copy; 2020 Company, Inc. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
     </footer>
 </main>
 
-{% block script %}
+{% block scripts %}
 {% endblock %}
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -86,6 +91,7 @@
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
 
+
 <script type="text/javascript" src="{{url_for('static', filename='newfield.js')}}"></script>
 <!--<script type="dist/js" src="{{url_for('static', filename='multi_select.js')}}"></script>-->
 <!--<script type="text/javascript" src="{{url_for('static', filename='table.js')}}"></script>-->
@@ -96,6 +102,12 @@
 <script src="https://unpkg.com/bootstrap-table@1.17.1/dist/extensions/export/bootstrap-table-export.min.js"></script>
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
+<!-- BOKEH -->
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-2.2.1.min.js"></script>
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-widgets-2.2.1.min.js"></script>
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-tables-2.2.1.min.js"></script>
+
 
 <script>
     $(document).ready(function() {

@@ -4,8 +4,8 @@
 
 <div class="container marketing" style="padding-top:50px" >
     {% if join %}
-    <h1>Join Room <b>{{author.room}}</b></h1>
-    <h4>By <b>{{author.name}}</b> from <b>{{author.afilliation}}</b></h4>
+    <h1>Join Room <b>{{pj_room.room}}</b></h1>
+    <h4>By <b>{{pj_room.name}}</b> from <b>{{pj_room.afilliation}}</b></h4>
     {% else %}
     <h1>Resume your Rooms</h1>
     {% endif %}
@@ -24,7 +24,10 @@
     {% endif %}
     {% endwith %}
 
+
     <form style="padding-top:50px" method="post">
+
+        {% if join %}
         <div class="form-group row">
             <div class="col-sm-10">
                 <input type="text" class="form-control" name="name" id="name" placeholder="Your name">
@@ -35,15 +38,24 @@
                 <input type="text" class="form-control" name="afilliation" id="afilliation" placeholder="Your afilliation">
             </div>
         </div>
+        {% endif %}
+
         <div class="form-group row">
             <div class="col-sm-10">
                 <input type="email" class="form-control" name="email" id="email" placeholder="Your academic email">
             </div>
         </div>
 
+        {% if join %}
         <div class="col-md-4">
             <button type="submit" id="register" name="make_gall" value="continue" class="btn btn-primary">{{ button }}</button>
         </div>
+        {% else %}
+        <div class="col-md-4">
+            <button type="submit" name="make_gall" value="continue" class="btn btn-primary">{{ button }}</button>
+        </div>
+        {% endif %}
+
     </form>
 
 </div>
