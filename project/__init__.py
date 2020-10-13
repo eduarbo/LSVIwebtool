@@ -2,6 +2,7 @@
 import os
 import random
 import shutil
+from urllib.parse import urljoin
 
 import pandas as pd
 
@@ -9,18 +10,32 @@ import numpy as np
 
 from flask import Flask, redirect, url_for, render_template, request, flash, send_file, send_from_directory
 from werkzeug.utils import secure_filename
+from whitenoise import WhiteNoise
 
 from project.database_setup import db, init_app
 from project.model import tracker
 from project import commands
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="staticfiles")
 
 #app.config.from_object("project.config.DevelopmentConfig")
 app.config.from_object(os.environ['APP_SETTINGS'])
+app.config["DEBUG"] = os.environ['DEBUG']
 
 commands.init_app(app)
 init_app(app)
+
+WHITENOISE_MAX_AGE = 31536000 if not app.config["DEBUG"] else 0
+CDN = "https://d35wj5jfi7ws35.cloudfront.net"
+app.config["STATIC_URL"] = CDN if not app.config["DEBUG"] else ""
+
+# configure WhiteNoise
+app.wsgi_app = WhiteNoise(
+    app.wsgi_app,
+    root=os.path.join(os.path.dirname(__file__), "staticfiles"),
+    prefix="assets/",
+    max_age=WHITENOISE_MAX_AGE,
+)
 
 
 #from flask_sqlalchemy import SQLAlchemy
@@ -42,11 +57,15 @@ session = db.session
 #DBSession = sessionmaker(bind=engine)
 #session = DBSession()
 
-app.config["MEDIA_FOLDER"] = os.path.join(os.getcwd(), 'project', 'media')
+app.config["MEDIA_FOLDER"] = os.path.join(os.path.dirname(__file__), "staticfiles")
 app.config["ALLOWED_FILE_EXTENSIONS"] = ['NPY', 'FITS', 'CVS']
 app.config["MAX_FILE_FILESIZE"] = 0.2 * 1024 * 1024
 
-@app.route("/media/<path:filename>")
+@app.template_global()
+def static_url(prefix, filename):
+    return urljoin(app.config["STATIC_URL"], f"{prefix}/{filename}")
+
+@app.route("/staticfiles/<path:filename>")
 def mediafiles(filename):
     return send_from_directory(app.config["MEDIA_FOLDER"], filename)
 
@@ -100,7 +119,8 @@ def new_projects(id=None):
             if allowed_file(file.filename):
 
                 filename = get_filepath(request=request)
-                file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
+                file_path = os.path.join(app.config["MEDIA_FOLDER"], filename) #static_url('assets', filename=filename)
+                #
 
                 # If file exist, remove it
                 # Handle errors while calling os.remove()
@@ -109,6 +129,8 @@ def new_projects(id=None):
                 except:
                     print("Error while deleting file %s or it does not exist." %(file_path))
 
+
+                print(file_path)
                 file.save(file_path)
                 print("File saved")
 
@@ -126,7 +148,8 @@ def new_projects(id=None):
             #create input data dict based on request
             req = {}
             filename = get_filepath(request=request)
-            file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
+            file_path = os.path.join(app.config["MEDIA_FOLDER"], filename) #static_url('assets', filename=filename)
+            #
             data = np.load(file_path)
 
             #create project directory root
