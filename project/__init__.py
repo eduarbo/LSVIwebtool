@@ -57,7 +57,7 @@ session = db.session
 #DBSession = sessionmaker(bind=engine)
 #session = DBSession()
 
-app.config["MEDIA_FOLDER"] = os.path.join(os.path.dirname(__file__), "staticfiles")
+app.config["MEDIA_FOLDER"] = os.path.join(os.path.dirname(__file__), "static")
 app.config["ALLOWED_FILE_EXTENSIONS"] = ['NPY', 'FITS', 'CVS']
 app.config["MAX_FILE_FILESIZE"] = 0.2 * 1024 * 1024
 
