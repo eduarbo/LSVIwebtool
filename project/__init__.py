@@ -16,7 +16,7 @@ from project.database_setup import db, init_app
 from project.model import tracker
 from project import commands
 
-app = Flask(__name__, static_folder="staticfiles")
+app = Flask(__name__)
 
 #app.config.from_object("project.config.DevelopmentConfig")
 app.config.from_object(os.environ['APP_SETTINGS'])
@@ -30,12 +30,12 @@ CDN = "https://d35wj5jfi7ws35.cloudfront.net"
 app.config["STATIC_URL"] = CDN if not app.config["DEBUG"] else ""
 
 # configure WhiteNoise
-app.wsgi_app = WhiteNoise(
-    app.wsgi_app,
-    root=os.path.join(os.path.dirname(__file__), "staticfiles"),
-    prefix="assets/",
-    max_age=WHITENOISE_MAX_AGE,
-)
+# app.wsgi_app = WhiteNoise(
+#     app.wsgi_app,
+#     root=os.path.join(os.path.dirname(__file__), "staticfiles"),
+#     prefix="assets/",
+#     max_age=WHITENOISE_MAX_AGE,
+# )
 
 
 #from flask_sqlalchemy import SQLAlchemy
