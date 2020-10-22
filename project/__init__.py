@@ -103,6 +103,7 @@ def new_projects(id=None):
             pjs = session.query(tracker).filter_by(id=id).first()
             session.close()
             project = pjs.project
+            email = pjs.email
             template = 'new_room.html'
         except:
             raise ValueError('No project with id %i' %(id))
@@ -124,7 +125,16 @@ def new_projects(id=None):
 
             if allowed_file(file.filename):
 
-                filename = get_filepath(request=request)
+                if id is not None:
+                    ext = 'npy'
+                    filename = secure_filename('%s_%s_%s.%s' % (project,
+                                                request.form.get('room'),
+                                                email,
+                                                ext))
+
+                else:
+                    filename = get_filepath(request=request)
+
                 file_path = os.path.join(app.config["MEDIA_FOLDER"], filename) #static_url('assets', filename=filename)
                 #
 
@@ -153,7 +163,17 @@ def new_projects(id=None):
 
             #create input data dict based on request
             req = {}
-            filename = get_filepath(request=request)
+
+            if id is not None:
+                ext = 'npy'
+                filename = secure_filename('%s_%s_%s.%s' % (project,
+                                            request.form.get('room'),
+                                            email,
+                                            ext))
+
+            else:
+                filename = get_filepath(request=request)
+
             file_path = os.path.join(app.config["MEDIA_FOLDER"], filename) #static_url('assets', filename=filename)
             #
             data = np.load(file_path)
