@@ -10,13 +10,20 @@ import numpy as np
 
 from flask import Flask, redirect, url_for, render_template, request, flash, send_file, send_from_directory
 from werkzeug.utils import secure_filename
-from whitenoise import WhiteNoise
 
 from project.database_setup import db, init_app
 from project.model import tracker
 from project import commands
 
+from rq import Queue
+from project.worker import conn
+from rq.job import Job
+
+from project.lscutout import html_postages
+
 app = Flask(__name__)
+
+#q = Queue(connection=conn)
 
 #app.config.from_object("project.config.DevelopmentConfig")
 app.config.from_object(os.environ['APP_SETTINGS'])
@@ -43,7 +50,6 @@ app.config["STATIC_URL"] = CDN if not app.config["DEBUG"] else ""
 #from sqlalchemy.orm import sessionmaker
 #from web.project.database_setup2 import Base, tracker
 
-from project.lscutout import html_postages
 
 # Set the secret key to some random bytes. Keep this really secret!
 #app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -230,29 +236,18 @@ def new_projects(id=None):
 
             req['vi'] = VI
 
-
-            if req['labels'] is not None:
-                veto = {key:data[val] for key, val in zip(req['labels'].keys(), req['labels'].values())}
-            else:
-                veto = None
-
-            if req['info_list'] is not None:
-                info = {key:data[val] for key, val in zip(req['info_list'].keys(), req['info_list'].values())}
-            else:
-                info = None
-
-            coord = [data[i] for i in req['coord_names']]
-
-            _plots = {}
-            for num, i in enumerate(batchs_idx):
-                plots = html_postages(coord=coord, idx=i, veto=veto, info=info, layer_list=req['layers'], BoxSize=req['boxsize'])
-                _plots['%i' %(num)] = plots
-
-            req['plots'] = _plots
             # Get elements of batchs_idx
             idxs = [item for sublist in batchs_idx for item in sublist]
 
             req['vi_query'] = {key:unclassified_label[0] for key in idxs}
+
+            _plots = {}
+            for num, i in enumerate(batchs_idx):
+
+                _plots['%i' %(num)] = []
+
+            req['plots'] = _plots
+
 
             # Add new entry to database
             newentry = tracker(project=req['project'],
@@ -279,7 +274,7 @@ def new_projects(id=None):
                                layers=req['layers'],
                                centres=req['centres'],
                                vi_labels=req['vi_labels'],
-                               plots=req['plots'],
+                               #plots=req['plots'],
                                vi_query=req['vi_query']
                                )
             session.add(newentry)
@@ -292,14 +287,76 @@ def new_projects(id=None):
             pj = session.query(tracker).filter_by(project=req['project'], room=req['room'], email=req['email'], author=True).first()
 
             if pj:
-                return redirect(url_for('create_entry', id=pj.id, name=req['name'], afilliation=req['afilliation'],
-                                        email=req['email'], batchID=batchID))
-                # entry_id = create_joiners_entry(id=pj.id, name=req['name'], afilliation=req['afilliation'], email=req['email'], batchID=batchID)
+                return redirect(url_for('progress', room_id=pj.id, filename=filename, batch=0))
             else:
                 raise ValueError('Project does not exist.')
 
     else:
         return render_template(template, disabled=True, file_info=file_info, id=id, project=project)
+
+@app.route('/progress/<int:room_id>/<filename>/<batch>')
+def progress(room_id, filename, batch):
+
+    pj = session.query(tracker).filter_by(id=room_id, author=True).first()
+
+    if pj:
+
+        file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
+        data = np.load(file_path)
+        batch = int(batch)
+
+        if pj.labels is not None:
+            veto = {key:data[val] for key, val in zip(pj.labels.keys(), pj.labels.values())}
+        else:
+            veto = None
+
+        if pj.info_list is not None:
+            info = {key:data[val] for key, val in zip(pj.info_list.keys(), pj.info_list.values())}
+        else:
+            info = None
+
+        coord = [data[i] for i in pj.coord_names]
+
+        #_plots = pj.plots
+
+        plots = html_postages(coord=coord, idx=pj.batchs_idx[str(batch)], veto=veto, info=info, layer_list=pj.layers, BoxSize=pj.boxsize)
+        #_plots['%s' %str(batch)] = plots
+        #pj.update({'plots': _plots})
+        if batch == 0:
+            pj.plots = {'0':plots}
+        else:
+            current_plots = {'%i' %(batch):plots}
+            pj.plots = {**pj.plots, **current_plots}
+        #pj.plots = {key:val for key, val in zip(_plots.keys(), _plots.values())}
+        session.commit()
+        print('================ progress ==============')
+        print('Batch %i created...' %(batch))
+        print(pj.plots)
+        #print(_plots[str(batch)])
+        session.close()
+
+        if batch < (pj.nbatchs - 1):
+
+            return redirect(url_for('progress', room_id=room_id, filename=filename, batch=batch+1))
+
+        else:
+
+            return redirect(url_for('create_entry', id=pj.id, name=pj.name, afilliation=pj.afilliation,
+                                        email=pj.email, batchID=0))
+
+    else:
+                raise ValueError('Project does not exist.')
+
+# @app.route("/jobs/<job_key>", methods=['GET'])
+# def get_results(job_key):
+#
+#     job = Job.fetch(job_key, connection=conn)
+#
+#     if job.is_finished:
+#         return str(job.result), 200
+#     else:
+#         return "Nay!", 202
+
 
 @app.route('/create_entry/<int:id>/<name>/<afilliation>/<email>/<int:batchID>')
 def create_entry(id, name, afilliation, email, batchID):
@@ -738,6 +795,7 @@ def get_key(my_dict, val):
              return key
 
     return "key doesn't exist"
+
 
 
 if __name__ == '__main__':
