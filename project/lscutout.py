@@ -87,8 +87,8 @@ def html_postages(coord=None, idx=None, veto=None, info=None, layer_list=None, B
         layers2 = []
         for layer in layer_list:
 
-            source='http://legacysurvey.org/viewer-dev/jpeg-cutout/?ra=%.12f&dec=%.12f&%s=%g&layer=%s&size=%g' % (RAidx, DECidx, scale_unit, scale, layer, size)
-            url='http://legacysurvey.org/viewer-dev?ra=%.12f&dec=%.12f&layer=%s&zoom=15' %(RAidx, DECidx, layer)
+            source='https://www.legacysurvey.org/viewer-dev/jpeg-cutout/?ra=%.12f&dec=%.12f&%s=%g&layer=%s&size=%g' % (RAidx, DECidx, scale_unit, scale, layer, size)
+            url='https://www.legacysurvey.org/viewer-dev?ra=%.12f&dec=%.12f&layer=%s&zoom=15' %(RAidx, DECidx, layer)
             imfig_source = ColumnDataSource(data=dict(url=[source], txt=[source]))
             image1 = ImageURL(url="url", x=0, y=1, w=size, h=size, anchor='bottom_left')
             img_source = p.add_glyph(imfig_source, image1)
