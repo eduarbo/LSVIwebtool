@@ -178,3 +178,7 @@ span.multiselect-native-select select {
 	margin-left: -20px;
 	margin-right: 0
 }
+
+@keyframes spinner-border {
+  to { transform: rotate(360deg); }
+}

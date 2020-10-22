@@ -5,39 +5,40 @@
         <ol class="carousel-indicators">
           <li data-target="#myCarousel" data-slide-to="0" class="active"></li>
           <li data-target="#myCarousel" data-slide-to="1"></li>
-          <li data-target="#myCarousel" data-slide-to="2"></li>
+<!--          <li data-target="#myCarousel" data-slide-to="2"></li>-->
         </ol>
         <div class="carousel-inner">
           <div class="carousel-item active">
-            <img class="first-slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="First slide">
+            <img class="first-slide" src="{{ url_for('static', filename='ls1.png') }}" alt="First slide">
+            <div class="container">
+              <div class="carousel-caption" >
+                <h1>Visual inspections made easier.</h1>
+                <p>LSVI webtol is gallery maker that support customized visual inspection tools. This is collaborative friendly, so you don't have to worry
+                about keeping track of everyone progress.</p>
+                <p><a class="btn btn-lg btn-primary" href="#projects" role="button">Learn more</a></p>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <img class="second-slide" src="{{ url_for('static', filename='ls3.png') }}" alt="Second slide">
             <div class="container">
               <div class="carousel-caption text-left">
-                <h1>Example headline.</h1>
-                <p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
-                <p><a class="btn btn-lg btn-primary" href="#" role="button">Sign up today</a></p>
+                <h1>Continue where you left.</h1>
+                <p>Resume your work at anytime and keep track of your progress with a personal dashboard. If not interested in VI, you can create simple galleries and share it with others.</p>
+                <p><a class="btn btn-lg btn-primary" href="#" role="button">Check it out!</a></p>
               </div>
             </div>
           </div>
-          <div class="carousel-item">
-            <img class="second-slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Second slide">
-            <div class="container">
-              <div class="carousel-caption">
-                <h1>Another example headline.</h1>
-                <p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
-                <p><a class="btn btn-lg btn-primary" href="#" role="button">Learn more</a></p>
-              </div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            <img class="third-slide" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Third slide">
-            <div class="container">
-              <div class="carousel-caption text-right">
-                <h1>One more for good measure.</h1>
-                <p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
-                <p><a class="btn btn-lg btn-primary" href="#" role="button">Browse gallery</a></p>
-              </div>
-            </div>
-          </div>
+<!--          <div class="carousel-item">-->
+<!--            <img class="third-slide" src="{{ url_for('static', filename='ls2.png') }}" alt="Third slide">-->
+<!--            <div class="container">-->
+<!--              <div class="carousel-caption text-right">-->
+<!--                <h1>One more for good measure.</h1>-->
+<!--                <p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>-->
+<!--                <p><a class="btn btn-lg btn-primary" href="#" role="button">Browse gallery</a></p>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
         </div>
         <a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev">
           <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -59,24 +60,57 @@
         <!-- Three columns of text below the carousel -->
         <div class="row">
           <div class="col-lg-4">
-            <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
+            <img class="rounded-circle" src="{{ url_for('static', filename='new.png') }}" alt="Generic placeholder image" width="140" height="140">
             <h2>New Project</h2>
-            <p>Text here...</p>
+
             <p><a class="btn btn-secondary" href="{{ url_for('new_projects') }}" role="button">Create new project &raquo;</a></p>
           </div><!-- /.col-lg-4 -->
           <div class="col-lg-4">
-            <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
+            <img class="rounded-circle" src="{{ url_for('static', filename='join.png') }}" alt="Generic placeholder image" width="140" height="140">
             <h2>Join</h2>
-            <p>Text here...</p>
-            <p><a class="btn btn-secondary" href="/test_viewer" role="button">Join existing project/room (TEST VIEWER V3.6!) &raquo;</a></p>
+
+            <p><a class="btn btn-secondary" href="#projects" role="button">Join existing room &raquo;</a></p>
           </div><!-- /.col-lg-4 -->
           <div class="col-lg-4">
-            <img class="rounded-circle" src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" alt="Generic placeholder image" width="140" height="140">
+            <img class="rounded-circle" src="{{ url_for('static', filename='resume.png') }}" alt="Generic placeholder image" width="140" height="140">
             <h2>Resume</h2>
-            <p>Text here...</p>
-            <p><a class="btn btn-secondary" href="#" role="button">Resume project/room &raquo;</a></p>
+
+            <p><a class="btn btn-secondary" href="/resume" role="button">Resume room &raquo;</a></p>
           </div><!-- /.col-lg-4 -->
         </div><!-- /.row -->
+
+        <div class="row featurette">
+          <div class="col-md-12">
+
+            <h2 class="featurette-heading">About</h2>
+
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px"> <b>LSVI</b> is an effort of the Durham DESI members to create sets of galleries of the <a href="https://www.legacysurvey.org/">Legacy Surveys</a> images
+              in order to made visual inspection (VI) easier and faster. Images are extracted directly from the <a href="https://www.legacysurvey.org/viewer#IC%201017">Legacy Viewer</a> webtool developed by the DESI imaging team.
+              This web tool supports the stacking of custom targets in galleries
+              and for each target, custom information. Our main feature is the support of collaborative VIs that keep track
+            of the progress fof all people involved. VIs structure relies on <b>projects</b>, <b>rooms</b> and <b>batches</b> . A VI project is where a specific set of galleries will lie
+            and this can be broken into rooms. Each room host a gallery and is where the VI happens. Rooms are divided into batches, each batch is just how many postages you want per single page.
+            The maximum allowed postage images per room is of 1000, and the maximum batch size permitted is 50. </p>
+
+            <h2 class="featurette-heading">The input data</h2>
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px"> Input data supported are in the form of <b>.npy</b> files. This have to at least include <b>RA</b>, <b>DEC</b> and, if your file include not only the targets that will be the centre
+            of the postages but also the stacking targets, you have to specify with a boolean column which one you want to be in the centre of the postages. In a similar way, <b>Target labels</b>,
+            which are labels for the targets stacked that will be able to turn on/off at anytime, and <b>Target info</b> such as magnitudes. VI labels are specified at <b>VI labels</b>, you can
+            as many as you like, the only restrictions here is that each entry allows a maximum of 4 character number. </p>
+
+            <h2 class="featurette-heading">How to get involved</h2>
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px"> The <b>Author</b> (the creator) of a VI room can, at anytime, close the room, which means room will
+              take not further classifications. Authors can also delete their rooms at anytime, this will also delete
+              the progress and data of all people involved in that room. Besides VIs, <b>LSVI</b> allows non-VI projects/rooms,
+              this are plain galleries that can be shared with others.
+
+              All VI and non-VI projects/rooms are listed below <a href="#projects">here</a> as well as the closed VI rooms. To enlist yourself in one of these VI rooms,
+              it is as easier as clicking the <b>Join!</b> button in the <b>Action column</b>. This will take you to sort of login page where you will be asked to provide
+                your name, afilliation and academic email, this to keep track of your future progress with VIs. You can always resume your unfinished VIs rooms by going
+            to <a href="/resume">Resume</a>, you will need only your academic email for this.</p>
+
+          </div>
+        </div>
 
 
         <!-- START THE FEATURETTES -->
@@ -84,14 +118,13 @@
         <hr class="featurette-divider">
 
         <div class="row featurette">
-          <div class="col-md-7">
-            <h2 class="featurette-heading">Projects/Rooms</h2>
-            <p class="lead">add text here...</p>
+          <div class="col-md-10">
+            <h2 class="featurette-heading" style="padding-bottom:30px">Projects/Rooms</h2>
           </div>
         </div>
 
 
-        <div class="container">
+        <div id="projects" class="container">
           <div class="row">
             <div class="col md-12">
               <div class="jumbotron p-3">

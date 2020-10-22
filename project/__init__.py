@@ -329,23 +329,22 @@ def progress(room_id, filename, batch):
             pj.plots = {**pj.plots, **current_plots}
         #pj.plots = {key:val for key, val in zip(_plots.keys(), _plots.values())}
         session.commit()
-        print('================ progress ==============')
-        print('Batch %i created...' %(batch))
-        print(pj.plots)
+        #print('================ progress ==============')
+        #print('Batch %i created...' %(batch))
+        #print(pj.plots)
         #print(_plots[str(batch)])
-        session.close()
+
 
         if batch < (pj.nbatchs - 1):
-
+            session.close()
             return redirect(url_for('progress', room_id=room_id, filename=filename, batch=batch+1))
-
         else:
-
+            session.close()
             return redirect(url_for('create_entry', id=pj.id, name=pj.name, afilliation=pj.afilliation,
                                         email=pj.email, batchID=0))
 
     else:
-                raise ValueError('Project does not exist.')
+        raise ValueError('Project does not exist.')
 
 # @app.route("/jobs/<job_key>", methods=['GET'])
 # def get_results(job_key):

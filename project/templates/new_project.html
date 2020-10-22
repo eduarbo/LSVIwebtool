@@ -282,27 +282,27 @@
                             {% if disabled %}
                             <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="BatchSize" id="BatchSize" disabled>
                             {% else %}
-                            <input type="range" min="20" max="200" value="50" step="10" class="slider" name="BatchSize" id="BatchSize">
+                            <input type="range" min="20" max="80" value="50" step="5" class="slider" name="BatchSize" id="BatchSize">
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    <label>N Cols:</label>
-                    <div class="form-group multiple-form-group input-group">
-                        <div class="input-group-btn input-group-select">
-                            <label class="input-group-text" id="Ncols_value"></label>
-                        </div>
-                        <div class="slidecontainer">
-                            {% if disabled %}
-                            <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="Ncols" id="Ncols" disabled>
-                            {% else %}
-                            <input type="range" min="1" max="10" value="5" step="1" class="slider" name="Ncols" id="Ncols">
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+<!--                <div class="col-md-4 mb-3">-->
+<!--                    <label>N Cols:</label>-->
+<!--                    <div class="form-group multiple-form-group input-group">-->
+<!--                        <div class="input-group-btn input-group-select">-->
+<!--                            <label class="input-group-text" id="Ncols_value"></label>-->
+<!--                        </div>-->
+<!--                        <div class="slidecontainer">-->
+<!--                            {% if disabled %}-->
+<!--                            <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="Ncols" id="Ncols" disabled>-->
+<!--                            {% else %}-->
+<!--                            <input type="range" min="1" max="10" value="5" step="1" class="slider" name="Ncols" id="Ncols">-->
+<!--                            {% endif %}-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
 
                 <div class="col-md-4 mb-3">
                     <label>Box Size (arcsec):</label>
@@ -314,7 +314,7 @@
                             {% if disabled %}
                             <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="BoxSize" id="BoxSize" disabled>
                             {% else %}
-                            <input type="range" min="10" max="100" value="30" step="5" class="slider" name="BoxSize" id="BoxSize">
+                            <input type="range" min="10" max="100" value="20" step="5" class="slider" name="BoxSize" id="BoxSize">
                             {% endif %}
                         </div>
                     </div>
@@ -326,7 +326,7 @@
 
             <!--      SUBMIT button      -->
             <div class="col-md-4">
-                <button type="submit" name="make_gall" value="continue" class="btn btn-primary">Create galleries</button>
+                <button type="submit" id="btnFetch" name="make_gall" value="continue" class="btn btn-primary">Create galleries</button>
             </div>
         </form>
 

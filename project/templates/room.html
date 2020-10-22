@@ -8,6 +8,14 @@ body {
   font-family: "Lato", sans-serif;
 }
 
+.galleries {
+  margin-left: 260px;
+  margin-right: 50px;
+  margin-top: 5%;
+  width: 90%;
+
+}
+
 .sidenav {
   width: 180px;
   position: fixed;
@@ -37,6 +45,12 @@ body {
 {% block scripts %}
 
 {{ plot_dict[0] | safe}}
+
+<script>
+function mark(el) {
+    el.style.border = "3px solid green";
+}
+</script>
 
 {% endblock %}
 
@@ -124,7 +138,7 @@ body {
   </div>
 
   <div>
-    <div class="container marketing" style="padding-top:50px" method="post">
+    <div class="galleries" style="padding-top:50px" method="post">
 
       <h1>Gallery room <b>{{pj_room.room}}</b></h1>
       <h3>Project <b>{{pj_room.project}}</b></h3>
@@ -137,7 +151,11 @@ body {
       <div class="form-group row">
         {% for key in plot_dict[1].keys() %}
         {% if key not in ['checkbox', 'radio'] %}
+
+          <span>
           <div>{{ plot_dict[1][key] | safe }}</div>
+          </span>
+
 
           <div class="cols">
             {% if (pj_room.vi) and ((pj_room.status == 'open')) %}
