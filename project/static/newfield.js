@@ -199,24 +199,24 @@ $(document).ready(function () {
 })(jQuery);
 
 //spinner
-$(document).ready(function() {
-    $("#btnFetch").click(function() {
-      // disable button
-      $(this).prop("disabled", true);
-      // add spinner to button
-      $(this).html(
-        `<span style="display: inline-block;
-    width: 2rem;
-    height: 2rem;
-    vertical-align: text-bottom;
-    border: .25em solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    -webkit-animation: spinner-border .75s linear infinite;
-    animation: spinner-border .75s linear infinite;width: 1rem;
-    height: 1rem;
-    border-width: .2em;
-" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Loadingg...`
-      );
-    });
-});
+//$(document).ready(function() {
+//    $("#btnFetch").click(function() {
+//      // disable button
+//      $(this).prop("disabled", true);
+//      // add spinner to button
+//      $(this).html(
+//        `<span style="display: inline-block;
+//    width: 2rem;
+//    height: 2rem;
+//    vertical-align: text-bottom;
+//    border: .25em solid currentColor;
+//    border-right-color: transparent;
+//    border-radius: 50%;
+//    -webkit-animation: spinner-border .75s linear infinite;
+//    animation: spinner-border .75s linear infinite;width: 1rem;
+//    height: 1rem;
+//    border-width: .2em;
+//" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Loadingg...`
+//      );
+//    });
+//});

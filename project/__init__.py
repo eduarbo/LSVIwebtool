@@ -183,7 +183,7 @@ def new_projects(id=None):
 
                 return render_template(template, request=request, disabled=False, file_info=file_info, id=id, project=project)
 
-            req['ncols'] = int(request.form.get('Ncols')) #number of columns in gallery grid #incorporate to html
+            #req['ncols'] = int(request.form.get('Ncols')) #number of columns in gallery grid #incorporate to html
             req['vi_req'] = int(request.form.get('VIrequest'))
             req['batchsize'] = int(request.form.get('BatchSize'))
             req['boxsize'] = int(request.form.get('BoxSize'))
@@ -261,7 +261,7 @@ def new_projects(id=None):
                                vi=req['vi'],
                                vi_req=req['vi_req'],
                                project_description=req['project_description'],
-                               ncols=req['ncols'],
+                               #ncols=req['ncols'],
                                batchsize=req['batchsize'],
                                boxsize=req['boxsize'],
                                nbatchs=req['nbatchs'],
@@ -299,6 +299,8 @@ def progress(room_id, filename, batch):
 
     pj = session.query(tracker).filter_by(id=room_id, author=True).first()
 
+    print('================ A ==============')
+
     if pj:
 
         file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
@@ -329,8 +331,8 @@ def progress(room_id, filename, batch):
             pj.plots = {**pj.plots, **current_plots}
         #pj.plots = {key:val for key, val in zip(_plots.keys(), _plots.values())}
         session.commit()
-        #print('================ progress ==============')
-        #print('Batch %i created...' %(batch))
+        print('================ progress ==============')
+        print('Batch %i created...' %(batch))
         #print(pj.plots)
         #print(_plots[str(batch)])
 
@@ -344,6 +346,7 @@ def progress(room_id, filename, batch):
                                         email=pj.email, batchID=0))
 
     else:
+        print('================ B ==============')
         raise ValueError('Project does not exist.')
 
 # @app.route("/jobs/<job_key>", methods=['GET'])
