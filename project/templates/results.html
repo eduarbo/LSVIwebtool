@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Home Page{% endblock %}
+{% block content %}
+
+<div class="container marketing" style="padding-top:50px">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <h1>Results </h1>
+            <h3>room: <b>{{ pj_room.room }}</b></h3>
+            <h4>project: <b>{{ pj_room.project }}</b></h4>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col md-12">
+                <div class="jumbotron p-3">
+                    <h2><b> Joiners </b></h2>
+
+                    <table class="table table-hover table-striped">
+                        <tr>
+                            <th>Name</th>
+                            <th>Afilliation</th>
+                            <th>Batchs</th>
+                            <th>Progress [%]</th>
+
+                            {% for label in pj_room.vi_labels %}
+                                <th>{{ label }}</th>
+                            {% endfor %}
+                        </tr>
+
+                        {% for user in users['users'] %}
+                        <tr>
+                            <td>{{ users[user+'_name'] }}</td>
+                            <td>{{ users[user+'_afilliation'] }}</td>
+                            <td>{{ users[user+'_batchs'] }}</td>
+                            <td>{{ users[user+'_progress'] }}</td>
+
+                            {% for label in pj_room.vi_labels %}
+                                <th>{{ users[user+'_'+label] }}</th>
+                            {% endfor %}
+
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -139,7 +139,6 @@
                     <th>VI required</th>
                     <th>Progress [%]</th>
                     <th>Author</th>
-                    <th>Status</th>
                     <th>Action</th>
                   </tr>
 
@@ -151,9 +150,9 @@
                     <td>{{row.vi_req}}</td>
                     <td>{{row.progress}}</td>
                     <td>{{row.name}} from {{row.afilliation}}</td>
-                    <td>{{row.status}}</td>
                     <td>
                       <a href="{{ url_for('download_file', room_id=row.id) }}" class="btn btn-warning btn-xs">Download</a>
+                      <a href="{{ url_for('results', room_id=row.id) }}" class="btn btn-primary">Results</a>
                       <a href="/join/{{row.id}}/" class="btn btn-primary">Join!</a>
                     </td>
                   </tr>

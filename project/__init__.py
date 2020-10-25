@@ -592,6 +592,55 @@ def closed_open(room_id, action, email):
 @app.route('/download/<int:room_id>')
 def download_file(room_id):
 
+    file_path, results = stack_results(room_id=room_id)
+
+    return send_file(file_path, as_attachment=True)
+
+
+@app.route('/results/<int:room_id>')
+def results(room_id):
+
+    pj_room = session.query(tracker).filter_by(id=room_id, author=True).first()
+    users = {}
+
+    file_path, results = stack_results(room_id=room_id)
+
+    users['users'] = [] #list(results.keys())
+    #users['users'].pop('idx')
+    tot = len(results['idx'])
+
+    print('========= users ===========')
+    for user in results.keys():
+        if user != 'idx':
+
+            pj_user = session.query(tracker).filter_by(room_id=room_id, author=False, email=user).all()
+
+            users['users'].append(user)
+            users['%s_batchs' %(user)] = len(pj_user)
+            users['%s_progress' %(user)] = 100 * np.sum(np.array(results[user]) != 'UNCL') / tot
+            users['%s_name' %(user)] = pj_user[0].name
+            users['%s_afilliation' %(user)] = pj_user[0].afilliation
+
+            for label in pj_room.vi_labels:
+                users['%s_%s' %(user, label)] = np.sum(np.array(results[user]) == label)
+
+    session.close()
+
+
+    print(users.keys())
+    print(users.values())
+
+    return render_template('results.html', pj_room=pj_room, users=users)
+
+
+
+
+#==============================
+#Some defs
+#==============================
+
+def stack_results(room_id):
+
     pjs = session.query(tracker).filter_by(room_id=room_id, author=False).all()
     pj_room = session.query(tracker).filter_by(id=room_id, author=True).first()
 
@@ -624,12 +673,7 @@ def download_file(room_id):
 
     pd.DataFrame(results).to_csv(file_path, sep='\t', index=False)
 
-    return send_file(file_path, as_attachment=True)
-
-
-#==============================
-#Some defs
-#==============================
+    return file_path, results
 
 def get_file_info(file_path, filename):
 
