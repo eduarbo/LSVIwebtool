@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Home Page{% endblock %}
+{% block title %}Results Page{% endblock %}
+
 {% block content %}
 
 <div class="container marketing" style="padding-top:50px">
@@ -25,9 +26,9 @@
                             <th>Batchs</th>
                             <th>Progress [%]</th>
 
-                            {% for label in pj_room.vi_labels %}
-                                <th>{{ label }}</th>
-                            {% endfor %}
+<!--                            {% for label in pj_room.vi_labels %}-->
+<!--                                <th>{{ label }}</th>-->
+<!--                            {% endfor %}-->
                         </tr>
 
                         {% for user in users['users'] %}
@@ -37,9 +38,9 @@
                             <td>{{ users[user+'_batchs'] }}</td>
                             <td>{{ users[user+'_progress'] }}</td>
 
-                            {% for label in pj_room.vi_labels %}
-                                <th>{{ users[user+'_'+label] }}</th>
-                            {% endfor %}
+<!--                            {% for label in pj_room.vi_labels %}-->
+<!--                                <th>{{ users[user+'_'+label] }}</th>-->
+<!--                            {% endfor %}-->
 
                         </tr>
                         {% endfor %}
@@ -51,5 +52,77 @@
         </div>
     </div>
 
+    <!-- bar chart canvas element -->
+    <canvas id="myChart" width="600" height="400"></canvas>
+<!--    <p id="caption">The chart is displaying a simple line chart.</p>-->
+
+
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+    //doughnut chart
+
+        // define the chart data
+        var chartData = {
+
+          labels : [{% for label in pj_room.vi_labels %}
+                     "{{label}}",
+                    {% endfor %}],
+
+          datasets : [
+
+          {% for user in users['users'] %}
+
+          {
+              label: '{{ users[user+'_name'] }}',
+              data : {{ users[user+'_results'] }},
+              backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850"]
+          },
+
+          {% endfor %}
+          ]
+
+        }
+
+        var options = {
+
+                title: {
+                    display: true,
+                    fontSize: 30,
+                    text: 'VI results by user'
+                },
+
+                legend: {
+                    display: true,
+                    //position: 'right',
+                    //maxWidth: 100,
+                },
+
+                tooltips: {
+                  callbacks: {
+                    label: function(item, data) {
+                    console.log(data.labels, item);
+                        return data.datasets[item.datasetIndex].label+ ": "+ data.labels[item.index]+ ": "+ data.datasets[item.datasetIndex].data[item.index] + ' %';
+                    }
+                  }
+                }
+        }
+
+        // get chart canvas
+        var ctx = document.getElementById("myChart");
+
+        // create the chart using the chart canvas
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: chartData,
+          options: options
+        });
+
+    </script>
+
 {% endblock %}

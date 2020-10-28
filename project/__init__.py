@@ -609,7 +609,6 @@ def results(room_id):
     #users['users'].pop('idx')
     tot = len(results['idx'])
 
-    print('========= users ===========')
     for user in results.keys():
         if user != 'idx':
 
@@ -617,18 +616,15 @@ def results(room_id):
 
             users['users'].append(user)
             users['%s_batchs' %(user)] = len(pj_user)
-            users['%s_progress' %(user)] = 100 * np.sum(np.array(results[user]) != 'UNCL') / tot
+            users['%s_progress' %(user)] = np.round(100 * np.sum(np.array(results[user]) != 'UNCL') / tot, 2)
             users['%s_name' %(user)] = pj_user[0].name
             users['%s_afilliation' %(user)] = pj_user[0].afilliation
+            users['%s_%s' %(user, 'results')] = []
 
             for label in pj_room.vi_labels:
-                users['%s_%s' %(user, label)] = np.sum(np.array(results[user]) == label)
+                users['%s_%s' %(user, 'results')].append(np.round(100 * np.sum(np.array(results[user]) == label) / tot, 1))
 
     session.close()
-
-
-    print(users.keys())
-    print(users.values())
 
     return render_template('results.html', pj_room=pj_room, users=users)
 
@@ -653,10 +649,14 @@ def stack_results(room_id):
     results['idx'] = list(pj_room.vi_query.keys())
 
     users = [pj.email for pj in pjs]
+    #print('========= users ===========')
+
     for user in set(users):
+        #print('========= user:%s ===========' %(user))
         pj_user = session.query(tracker).filter_by(room_id=room_id, author=False, email=user).all()
-        output = pj_room.vi_query
+        output = pj_room.vi_query.copy()
         for pj in pj_user:
+            #print(pj.vi_query.values())
             for key, value in zip(pj.vi_query.keys(), pj.vi_query.values()):
                 if value != 'UNCL':
                     output[key] = value
