@@ -34,7 +34,7 @@
                     <input type="text" class="form-control" id="project" name="project" placeholder="Project Title" value="{{ request.form['project'] }}" required>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <textarea class="form-control" id="project_description" name="project_description" rows="2" maxlength="500" placeholder="Description of project. (Optional)">{{ request.form['project_description'] }}</textarea>
+                    <textarea class="form-control" id="project_description" name="project_description" rows="2" placeholder="Description of project. (Optional)">{{ request.form['project_description'] }}</textarea>
                 </div>
             </div>
 
@@ -268,9 +268,9 @@
                         </div>
                         <div class="slidecontainer">
                             {% if disabled %}
-                            <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="VIrequest" id="VIrequest" disabled>
+                            <input type="range" min="10" max="2000" value="100" step="10" class="slider" name="VIrequest" id="VIrequest" disabled>
                             {% else %}
-                            <input type="range" min="10" max="1000" value="100" step="10" class="slider" name="VIrequest" id="VIrequest">
+                            <input type="range" min="10" max="2000" value="100" step="10" class="slider" name="VIrequest" id="VIrequest">
                             {% endif %}
                         </div>
                     </div>

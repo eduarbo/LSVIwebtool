@@ -201,7 +201,17 @@ function mark(el) {
           </li>
           {% endif %}
 
-          {% for batch in range(pj_room.nbatchs) %}
+          {% if pj_room.nbatchs > 10 %}
+            {% if batchID < 5 %}
+              {% set pags = [0,1,2,3,4] %}
+            {% else %}
+              {% set pags = [0,1,2,3,4, batchID] %}
+            {% endif %}
+          {% else %}
+            {% set pags = range(pj_room.nbatchs) %}
+          {% endif %}
+
+          {% for batch in  pags%}
           {% if batch == batchID %}
           <li class="page-item active">
             {% if pj_room.vi %}

@@ -245,7 +245,7 @@ def new_projects(id=None):
 
             req['layers'] = layers
             req['centres'] = request.form.get('centres')
-            unclassified_label = ['UNCL']
+            unclassified_label = ['NI']
 
             if (len(request.form.getlist('VIlabels')) < 2) & ('' in request.form.getlist('VIlabels')):
                 req['vi_labels'] = None
@@ -319,7 +319,7 @@ def progress(room_id, filename, batch):
 
     pj = session.query(tracker).filter_by(id=room_id, author=True).first()
 
-    print('================ A ==============')
+    #print('================ A ==============')
 
     if pj:
 
@@ -351,8 +351,8 @@ def progress(room_id, filename, batch):
             pj.plots = {**pj.plots, **current_plots}
         #pj.plots = {key:val for key, val in zip(_plots.keys(), _plots.values())}
         session.commit()
-        print('================ progress ==============')
-        print('Batch %i created...' %(batch))
+        #print('================ progress ==============')
+        print('========== Batch %i created... ==========' %(batch))
         #print(pj.plots)
         #print(_plots[str(batch)])
 
@@ -616,7 +616,7 @@ def results(room_id):
 
             users['users'].append(user)
             users['%s_batchs' %(user)] = len(pj_user)
-            users['%s_progress' %(user)] = np.round(100 * np.sum(np.array(results[user]) != 'UNCL') / tot, 2)
+            users['%s_progress' %(user)] = np.round(100 * np.sum(np.array(results[user]) != 'NI') / tot, 2)
             users['%s_name' %(user)] = pj_user[0].name
             users['%s_afilliation' %(user)] = pj_user[0].afilliation
             users['%s_%s' %(user, 'results')] = []
@@ -658,7 +658,7 @@ def stack_results(room_id):
         for pj in pj_user:
             #print(pj.vi_query.values())
             for key, value in zip(pj.vi_query.keys(), pj.vi_query.values()):
-                if value != 'UNCL':
+                if value != 'NI':
                     output[key] = value
         results[user] = list(output.values())
 
@@ -838,7 +838,7 @@ def get_room_progress(pj_room):
     pjs = session.query(tracker).filter_by(room_id=pj_room.id, author=False).all()
     N = 0
     for pj in pjs:
-        N += int(np.sum(np.array(list(pj.vi_query.values())) != 'UNCL'))
+        N += int(np.sum(np.array(list(pj.vi_query.values())) != 'NI'))
 
     return np.round(100*N/pj_room.vi_req, 1)
 
@@ -846,7 +846,7 @@ def get_user_progress(pj_entry):
 
     pj_room = session.query(tracker).filter_by(id=pj_entry.room_id, author=True).first()
     tot = len(pj_room.batchs_idx[str(pj_entry.batch)])
-    current = int(np.sum(np.array(list(pj_entry.vi_query.values())) != 'UNCL'))
+    current = int(np.sum(np.array(list(pj_entry.vi_query.values())) != 'NI'))
 
     if tot == 0:
         tot = 1

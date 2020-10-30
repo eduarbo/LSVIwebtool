@@ -45,8 +45,8 @@ def html_postages(coord=None, idx=None, veto=None, info=None, layer_list=None, B
     radius = BoxSize/(2 * 3600)
     size = int(round(boxsize/scale))
     figsize = int(128)
-    print('BoxSize', boxsize)
-    print('Size', size)
+    #print('BoxSize', boxsize)
+    #print('Size', size)
 
     idx_list = idx #random.sample(list(idx), rows*cols)
 
@@ -174,7 +174,7 @@ def html_postages(coord=None, idx=None, veto=None, info=None, layer_list=None, B
     #plots['controls'] = components(radio)
     #script_2, div_2 = components(controls)
 
-    print('===== plots ======')
+    #print('===== plots ======')
     plots['checkbox'] = checkbox
     plots['radio'] = radio
 
