@@ -93,6 +93,23 @@ def home():
 
     return render_template('index.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed, myprojects_nonVI=pjs_nonVI)
 
+@app.route('/admin')
+def admin():
+
+    pjs_open = session.query(tracker).filter_by(status='open', vi=True, author=True).all()
+    pjs_closed = session.query(tracker).filter_by(status='closed', vi=True, author=True).all()
+    pjs_nonVI = session.query(tracker).filter_by(vi=False, author=True).all()
+
+    #update progress for each room
+    for pjs in [pjs_open, pjs_closed]:
+        for pj in pjs:
+            progress = get_room_progress(pj_room=pj)
+            pj.progress = progress
+    #session.commit()
+    session.close()
+
+    return render_template('_admin.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed, myprojects_nonVI=pjs_nonVI)
+
 
 @app.route('/new_room/<int:id>', methods=['GET', 'POST'])
 @app.route('/new_project/', methods=['GET', 'POST'])
@@ -557,6 +574,46 @@ def delete(room_id, email):
 
     flash("Room %s Deleted Successfully" %(room))
     return redirect(url_for('user_active_rooms', user=email))
+
+@app.route('/delete_admin/<int:room_id>/<email>', methods=['GET', 'POST'])
+def delete_admin(room_id, email):
+
+    pj_room = session.query(tracker).filter_by(id=room_id, author=True).first()
+
+    if not pj_room:
+
+        session.close()
+        flash('Something went wrong. No room with ID %i was found.' %(room_id))
+        return redirect(url_for('user_active_rooms', user=email))
+
+    room = pj_room.room
+
+    # Remove file
+
+    filename = '%s_%s_%s.%s' % (pj_room.project, pj_room.room, pj_room.email, 'npy')
+    file_path = os.path.join(app.config["MEDIA_FOLDER"], filename)
+
+    try:
+        shutil.rmtree(file_path)
+    except OSError as e:
+        print("Error: %s : %s" % (file_path, e.strerror))
+
+    # Remove all the entries that depends on this room
+    pjs = session.query(tracker).filter_by(room_id=room_id, author=False).all()
+
+    if pjs:
+        for pj in pjs:
+            session.delete(pj)
+            session.commit()
+
+    # Remove room
+    session.delete(pj_room)
+    session.commit()
+
+    session.close()
+
+    flash("Room %s Deleted Successfully" %(room))
+    return redirect(url_for('admin'))
 
 
 @app.route('/<action>/<int:room_id>/<email>', methods=['GET', 'POST'])
