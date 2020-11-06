@@ -504,15 +504,43 @@ def user_active_rooms(user):
     pj_entry = session.query(tracker).filter_by(email=user, author=False).all()
     pj_room = session.query(tracker).filter_by(email=user, author=True).all()
 
+    printN('first query done...')
+
     if not pjs:
         session.close()
         flash('You do not have projects yet, neither VI works in process.')
         return render_template('join.html', button='Continue', join=False)
 
+    batches = {}
     if len(pj_entry) > 0:
-        for pj in pj_entry:
-            progress = get_user_progress(pj_entry=pj)
-            pj.progress = progress
+        for n, pj in enumerate(pj_entry):
+            #progress = get_user_progress(pj_entry_id=pj.id)
+
+            #printN('Progress computed...', pj.id)
+
+            #pj.progress = progress
+
+            #printN('start...')
+
+            if (n == 0) or (pj.room_id not in list(batches.keys())):
+                pj_room_i = session.query(tracker).filter_by(id=pj.room_id, author=True).first()
+                batches[pj.room_id] = pj_room_i.batchs_idx
+
+            tot = len(batches[pj.room_id][str(pj.batch)])
+
+            #print(list(batches.keys()), tot)
+            current = int(np.sum(np.array(list(pj.vi_query.values())) != 'NI'))
+
+            #printN('Finish progress...')
+
+            if tot == 0:
+                tot = 1
+
+            #session.close()
+
+            pj.progress = np.round(100*current/tot, 1)
+
+            #printN('progress of ID: \t %i \t done...' %(pj.id))
 
         name = pj_entry[0].name
 
@@ -527,6 +555,8 @@ def user_active_rooms(user):
         for pj in myprojects:
             progress = get_room_progress(pj_room=pj)
             pj.progress = progress
+
+            printN('Owners progress of ID: \t %i \t done...' %(pj.id))
 
     session.close()
 
@@ -691,6 +721,10 @@ def results(room_id):
 #==============================
 #Some defs
 #==============================
+
+def printN(text):
+
+    print('======================= \n ==== %s ==== \n =======================' %(text))
 
 def stack_results(room_id):
 
@@ -899,14 +933,22 @@ def get_room_progress(pj_room):
 
     return np.round(100*N/pj_room.vi_req, 1)
 
-def get_user_progress(pj_entry):
+def get_user_progress(pj_entry_id):
 
+    pj_entry = session.query(tracker).filter_by(id=pj_entry_id, author=False).first()
     pj_room = session.query(tracker).filter_by(id=pj_entry.room_id, author=True).first()
+
+    printN('progress query done...')
+
     tot = len(pj_room.batchs_idx[str(pj_entry.batch)])
     current = int(np.sum(np.array(list(pj_entry.vi_query.values())) != 'NI'))
 
+    printN('Finish progress...')
+
     if tot == 0:
         tot = 1
+
+    session.close()
 
     return np.round(100*current/tot, 1)
 
