@@ -715,7 +715,28 @@ def results(room_id):
 
     return render_template('results.html', pj_room=pj_room, users=users)
 
+@app.route('/edit_room/<int:room_id>', methods=['GET', 'POST'])
+def edit_room(room_id):
 
+    pj_room = session.query(tracker).filter_by(id=room_id, author=True).first()
+
+    if request.method == 'POST':
+        if request.form.get('commit_changes') == 'continue':
+
+            printN('here1')
+
+            pj_room.project_description = request.form.get('project_description')
+            session.commit()
+            #session.close()
+
+            printN('here2')
+
+            #return render_template('edit_room.html', pj_room=pj_room)
+            #request new value and commit changes to database
+
+            #return redirect(url_for('create_entry', id=room_id, name=name, afilliation=afilliation, email=email, batchID=int(999)))
+
+    return render_template('edit_room.html', pj_room=pj_room)
 
 
 #==============================
