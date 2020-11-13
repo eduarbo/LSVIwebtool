@@ -564,7 +564,6 @@ def user_active_rooms(user):
                            myprojects_closed=myprojects_closed, myprojects_nonVI=myprojects_nonVI,
                            name=name, user=user)
 
-# This will let us Delete our book
 @app.route('/delete/<int:room_id>/<email>', methods=['GET', 'POST'])
 def delete(room_id, email):
 
@@ -603,6 +602,26 @@ def delete(room_id, email):
     session.close()
 
     flash("Room %s Deleted Successfully" %(room))
+    return redirect(url_for('user_active_rooms', user=email))
+
+
+@app.route('/delete_batch/<int:id>/<email>', methods=['GET', 'POST'])
+def delete_batch(id, email):
+
+    pj = session.query(tracker).filter_by(id=id, email=email).first()
+    batch = pj.batch
+
+    if not pj:
+
+        session.close()
+        flash('Something went wrong. No BATCH with ID %i was found.' %(id))
+        return redirect(url_for('user_active_rooms', user=email))
+
+    session.delete(pj)
+    session.commit()
+    session.close()
+
+    flash("BATCH %i Deleted Successfully" %(batch))
     return redirect(url_for('user_active_rooms', user=email))
 
 @app.route('/delete_admin/<int:room_id>/<email>', methods=['GET', 'POST'])
@@ -783,7 +802,7 @@ def stack_results(room_id):
     except:
         print("file %s does not exist. " % (file_path))
 
-    pd.DataFrame(results).to_csv(file_path, sep='\t', index=False)
+    pd.DataFrame(results).to_csv(file_path )
 
     return file_path, results
 

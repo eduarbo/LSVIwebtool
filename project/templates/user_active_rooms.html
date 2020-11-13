@@ -101,6 +101,13 @@
                               <td>
                                   <a href="{{ url_for('viewer', room_id=row.room_id, entry_id=row.id, batchID=row.batch ) }}"
                                      class="btn btn-primary" >Continue</a>
+
+                                  <a> | </a>
+
+                                  <a href="{{url_for('delete_batch', id=row.id, email=row.email)}}"
+                                     class="btn btn-danger btn-xs"
+                                     onclick="return confirm('Are You Sure To Delete BATCH {{ row.batch }} from Room {{ row.room }}? All VI work will be lost.')">Delete</a>
+
                               </td>
                           </tr>
                           {% endfor %}
