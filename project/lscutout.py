@@ -108,7 +108,10 @@ def html_postages(coord=None, idx=None, veto=None, info=None, layer_list=None, B
             data['x'] = ravpix
             data['y'] = decvpix
             for info_key, info_val in zip(info.keys(), info.values()):
-                data[info_key] = np.array(info_val)[(mask) & (val)]
+                if isinstance(info_val[0], (bytes, bytearray)):
+                    data[info_key] = np.array(info_val)[(mask) & (val)].astype('U13')
+                else:
+                    data[info_key] = np.array(info_val)[(mask) & (val)]
 
             sourceCirc = ColumnDataSource(data=data)
 

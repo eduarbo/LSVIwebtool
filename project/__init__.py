@@ -93,6 +93,12 @@ def home():
 
     return render_template('index.html', myprojects_open=pjs_open, myprojects_closed=pjs_closed, myprojects_nonVI=pjs_nonVI)
 
+@app.route('/tutorials')
+def tutorials():
+
+    return render_template('tutorials.html')
+
+
 @app.route('/admin')
 def admin():
 

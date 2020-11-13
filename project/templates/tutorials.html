@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Tutorials{% endblock %}
+{% block content %}
+
+      <!-- Marketing messaging and featurettes
+      ================================================== -->
+      <!-- Wrap the rest of the page in another container to center all the content. -->
+
+      <div class="container marketing">
+
+        <!-- Three columns of text below the carousel -->
+        <div class="row" style="padding-top:50px">
+          <div class="col-lg-4">
+            <img class="rounded-circle" src="{{ url_for('static', filename='new.png') }}" alt="Generic placeholder image" width="140" height="140">
+            <h2>New Project</h2>
+
+            <p><a class="btn btn-secondary" href="#new_project" role="button">How to create a new project &raquo;</a></p>
+          </div><!-- /.col-lg-4 -->
+          <div class="col-lg-4">
+            <img class="rounded-circle" src="{{ url_for('static', filename='join.png') }}" alt="Generic placeholder image" width="140" height="140">
+            <h2>Join</h2>
+
+            <p><a class="btn btn-secondary" href="#" role="button">How to join an existing room &raquo;</a></p>
+          </div><!-- /.col-lg-4 -->
+          <div class="col-lg-4">
+            <img class="rounded-circle" src="{{ url_for('static', filename='resume.png') }}" alt="Generic placeholder image" width="140" height="140">
+            <h2>Resume</h2>
+
+            <p><a class="btn btn-secondary" href="#" role="button">How to resume your work &raquo;</a></p>
+          </div><!-- /.col-lg-4 -->
+        </div><!-- /.row -->
+
+        <div class="row featurette">
+          <div id="new_project" class="col-md-12">
+
+            <h2 class="featurette-heading">How to create a new project</h2>
+
+            <h1 style="padding-top:20px">The input file</h1>
+
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px">In order to create a new project <a href="{{ url_for('new_projects') }}">here</a> it is necessary to create a numpy file with the information you need
+            for your gallery. The file must contain at least the <b>RA</b> and <b>DEC</b>, however, the webtool allows to have information of all objects around the object in the centre
+            only if your catalogue/file have those. Hence the following extra information is requiered:</p>
+
+            <ul>
+            <li><b>Centres:</b> For all the objects in your catalogue/file, define a boolean array with the objects you want to be in the centre of postages.</li>
+
+            <li><b>Target labels:</b>  Include labels of your objects (such as which ones are BGS, LRG's, QSOs, etc) with a boolean array. You can have as many labels as you want.</li>
+
+            <li><b>Target info:</b> This is the information for each target that will appear as a tooltip. This information can be either strings, floats, integers or booleans.
+            Example of this are the magnitudes for each object.</li>
+            </ul>
+
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px">Below, I have included a python script with an example to create a file with above specifications.
+              The source catalogue is the DESI Target DR8 output catalogue within the circular patch centre at RA=121 and DEC=18 and with radius of 1 arcsec. The <b>Centres</b>
+              are the dark time (DT) targets within 5 arcsec to its closest BGS target. The DT targets are LRGs, ELGs and QSOs. The <b>Target labels</b> are BGS, LRG, ELG, QSO and REAMAIN (which is everything else).
+              The <b>Target info</b> is g,r and z magnitudes with extinction correction, the MORPHTYPE (tractor best fit model) and the REF_CAT (whether the object is a large galaxy,
+              Gaia, Tycho object or none of previous.).
+            </p>
+
+            <pre><code id="python_code">
+
+import numpy as np
+from desitarget.io import read_targets_in_cap
+from desitarget.sv1.sv1_targetmask import desi_mask
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.table import Table
+
+def flux_to_mag(flux):
+    mag = 22.5 - 2.5*np.log10(flux)
+    return mag
+
+def search_around(ra1, dec1, ra2, dec2, search_radius=1., verbose=True):
+    '''
+    Using the astropy.coordinates.search_around_sky module to find all pairs within
+    some search radius.
+    Inputs:
+    RA and Dec of two catalogs;
+    search_radius (arcsec);
+    Outputs:
+        idx1, idx2: indices of matched objects in the two catalogs;
+        d2d: angular distances (arcsec);
+        d_ra, d_dec: the differences in RA and Dec (arcsec);
+    '''
+
+    # protect the global variables from being changed by np.sort
+    ra1, dec1, ra2, dec2 = map(np.copy, [ra1, dec1, ra2, dec2])
+
+    # Matching catalogs
+    sky1 = SkyCoord(ra1*u.degree,dec1*u.degree, frame='icrs')
+    sky2 = SkyCoord(ra2*u.degree,dec2*u.degree, frame='icrs')
+    idx1, idx2, d2d, d3d = sky2.search_around_sky(sky1, seplimit=search_radius*u.arcsec)
+    if verbose:
+        print('%d nearby objects ~ %g %%'%(len(idx1), 100*len(idx1)/len(ra2)))
+
+    # convert distances to numpy array in arcsec
+    d2d = np.array(d2d.to(u.arcsec))
+
+
+    d_ra = (ra2[idx2]-ra1[idx1])*3600.    # in arcsec
+    d_dec = (dec2[idx2]-dec1[idx1])*3600. # in arcsec
+    ##### Convert d_ra to actual arcsecs #####
+    mask = d_ra > 180*3600
+    d_ra[mask] = d_ra[mask] - 360.*3600
+    mask = d_ra < -180*3600
+    d_ra[mask] = d_ra[mask] + 360.*3600
+    d_ra = d_ra * np.cos(dec1[idx1]/180*np.pi)
+    ##########################################
+
+    return idx1, idx2, d2d, d_ra, d_dec
+
+
+#Load sample of resolve DR8 SV target catalogue
+hpdirname_sv1 = '/project/projectdirs/desi/target/catalogs/dr8/0.31.1/targets/sv/resolve'
+
+# Read targets in an RA, Dec, radius (degrees) "circle"
+radecrad = [121,18,1]
+captargs_sv1 = read_targets_in_cap(hpdirname_sv1, radecrad)
+
+print('Total targets: \t %i' %(captargs_sv1.size))
+
+#DESI target classes for SV
+isELG_sv1 = (captargs_sv1["SV1_DESI_TARGET"] & desi_mask["ELG"]) != 0
+isQSO_sv1 = (captargs_sv1["SV1_DESI_TARGET"] & desi_mask["QSO"]) != 0
+isLRG_sv1 = (captargs_sv1["SV1_DESI_TARGET"] & desi_mask["LRG"]) != 0
+isBGS_sv1 = (captargs_sv1["SV1_DESI_TARGET"] & desi_mask["BGS_ANY"]) != 0
+
+# Find all the SV targets close to BGS targets within 5 arcsec radius
+idx2, idx1, d2d, d_ra, d_dec = search_around(captargs_sv1['RA'], captargs_sv1['DEC'], captargs_sv1['RA'][isBGS_sv1],
+                                             captargs_sv1['DEC'][isBGS_sv1], search_radius=5)
+
+#Create new file with the information needed to make the galleries
+tab = Table()
+
+#RA and DEC
+tab['RA'], tab['DEC'] = captargs_sv1['RA'], captargs_sv1['DEC']
+
+#The centres
+idx = idx2[d2d > 0]
+centres = np.zeros(len(captargs_sv1), dtype=bool)
+pairs = centres.copy()
+pairs[idx] = True
+for target in [isLRG_sv1, isQSO_sv1, isELG_sv1]:
+    centres |= ((target) & (pairs))
+
+print('Total targets available to make postages for: \t %i' %(np.sum(centres)))
+
+tab['centres'] = centres
+
+#Target labels. We will have 4 labels, BGS, LRG, QSO, ELG and REMAIN which is everything else.
+tab['BGS'] = isBGS_sv1
+tab['LRG'] = isLRG_sv1
+tab['QSO'] = isQSO_sv1
+tab['ELG'] = isELG_sv1
+tab['REMAIN'] = ~((isBGS_sv1) | (isLRG_sv1) | (isQSO_sv1) | (isELG_sv1))
+
+#Target info. We will include the g,r and z magnitudes, the MORPHTYPE and the REFCAT parameters.
+for band in ['G', 'R', 'Z']:
+    tab['%sMAG' %(band)] = flux_to_mag(captargs_sv1['FLUX_%s' %(band)]/captargs_sv1['MW_TRANSMISSION_%s' %(band)])
+tab['MORPHTYPE'] = captargs_sv1['MORPHTYPE']
+tab['REF_CAT'] = captargs_sv1['REF_CAT']
+
+#save file
+filename = 'bgsSV_close_dt_dr8'
+np.save('/global/cscratch1/sd/qmxp55/bgstargets_output/%s' %(filename), tab)
+
+            </code></pre>
+
+            <p style="font-size:130%;padding-top:20px;padding-bottom:20px">
+              Once we generate the file, we are ready to create the galleries. A video showing how to do this can be
+              found below. If you wonder how this gallery looks like, take a look <a href="#">here</a>.
+            </p>
+
+
+
+
+          </div>
+        </div>
+
+
+        <!-- /END THE FEATURETTES -->
+
+      </div><!-- /.container -->
+{% endblock %}
+
+{% block scripts %}
+    <script type="text/javascript">
+        window.onload = function(){
+            var codeElement = document.getElementById('python_code');
+            // Add code mirror class for coloring (default is the theme)
+            codeElement.classList.add( 'cm-s-default' );
+            var code = codeElement.innerText;
+
+            codeElement.innerHTML = "";
+
+            CodeMirror.runMode(
+              code,
+              'python',
+              codeElement
+            );
+        };
+    </script>
+{% endblock %}
