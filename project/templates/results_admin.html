@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Results Page{% endblock %}
+
+{% block content %}
+
+<div class="container marketing" style="padding-top:50px">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <h1>Results </h1>
+            <h3>room: <b>{{ pj_room.room }}</b></h3>
+            <h4>project: <b>{{ pj_room.project }}</b></h4>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col md-12">
+                <div class="jumbotron p-3">
+                    <h2><b> Joiners </b></h2>
+
+                    <table class="table table-hover table-striped">
+                        <tr>
+                            <th>Name</th>
+                            <th>Afilliation</th>
+                            <th>Batchs</th>
+                            <th>Progress [%]</th>
+                            <th>Edit</th>
+
+<!--                            {% for label in pj_room.vi_labels %}-->
+<!--                                <th>{{ label }}</th>-->
+<!--                            {% endfor %}-->
+                        </tr>
+
+                        {% for user in users['users'] %}
+                        <tr>
+                            <td>{{ users[user+'_name'] }}</td>
+                            <td>{{ users[user+'_afilliation'] }}</td>
+                            <td>{{ users[user+'_batchs'] }}</td>
+                            <td>{{ users[user+'_progress'] }}</td>
+                            <td>
+                                <a href="{{ url_for('user_active_rooms', user=users[user+'_email']) }}">
+                                    <button class="btn btn-warning btn">Edit room</button>
+                                </a>
+                            </td>
+
+<!--                            {% for label in pj_room.vi_labels %}-->
+<!--                                <th>{{ users[user+'_'+label] }}</th>-->
+<!--                            {% endfor %}-->
+
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <!-- bar chart canvas element -->
+    <canvas id="myChart" width="600" height="400"></canvas>
+<!--    <p id="caption">The chart is displaying a simple line chart.</p>-->
+
+
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+    //doughnut chart
+
+        // define the chart data
+        var chartData = {
+
+          labels : [{% for label in pj_room.vi_labels %}
+                     "{{label}}",
+                    {% endfor %}],
+
+          datasets : [
+
+          {% for user in users['users'] %}
+
+          {
+              label: '{{ users[user+'_name'] }}',
+              data : {{ users[user+'_results'] }},
+              backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850", "#edae26", "#a9b500", "#99ed4a", "#ba207c"]
+          },
+
+          {% endfor %}
+          ]
+
+        }
+
+        var options = {
+
+                title: {
+                    display: true,
+                    fontSize: 30,
+                    text: 'VI results by user'
+                },
+
+                legend: {
+                    display: true,
+                    //position: 'right',
+                    //maxWidth: 100,
+                },
+
+                tooltips: {
+                  callbacks: {
+                    label: function(item, data) {
+                    console.log(data.labels, item);
+                        return data.datasets[item.datasetIndex].label+ ": "+ data.labels[item.index]+ ": "+ data.datasets[item.datasetIndex].data[item.index] + ' %';
+                    }
+                  }
+                }
+        }
+
+        // get chart canvas
+        var ctx = document.getElementById("myChart");
+
+        // create the chart using the chart canvas
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: chartData,
+          options: options
+        });
+
+    </script>
+
+{% endblock %}

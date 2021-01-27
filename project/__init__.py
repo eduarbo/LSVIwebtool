@@ -740,6 +740,39 @@ def results(room_id):
 
     return render_template('results.html', pj_room=pj_room, users=users)
 
+@app.route('/results_admin/<int:room_id>')
+def results_admin(room_id):
+
+    pj_room = session.query(tracker).filter_by(id=room_id, author=True).first()
+    users = {}
+
+    file_path, results = stack_results(room_id=room_id)
+
+    users['users'] = [] #list(results.keys())
+    #users['users'].pop('idx')
+    tot = len(results['idx'])
+
+    for user in results.keys():
+        if user != 'idx':
+
+            pj_user = session.query(tracker).filter_by(room_id=room_id, author=False, email=user).all()
+
+            users['users'].append(user)
+            users['%s_batchs' %(user)] = len(pj_user)
+            users['%s_progress' %(user)] = np.round(100 * np.sum(np.array(results[user]) != 'NI') / tot, 2)
+            users['%s_name' %(user)] = pj_user[0].name
+            users['%s_afilliation' %(user)] = pj_user[0].afilliation
+            users['%s_email' %(user)] = pj_user[0].email
+            users['%s_%s' %(user, 'results')] = []
+
+            for label in pj_room.vi_labels:
+                users['%s_%s' %(user, 'results')].append(np.round(100 * np.sum(np.array(results[user]) == label) / tot, 1))
+
+    session.close()
+
+    return render_template('results_admin.html', pj_room=pj_room, users=users)
+
+
 @app.route('/edit_room/<int:room_id>', methods=['GET', 'POST'])
 def edit_room(room_id):
 
